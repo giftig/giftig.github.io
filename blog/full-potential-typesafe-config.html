@@ -1,0 +1,403 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,typesafe,config,hocon"/>
+    <meta name="description" content="Typesafe config is ubiquitous in Scala and is written in HOCON, a powerfully expressive superset of JSON, but it&#39;s common to overlook some key features which can simplify how you write your config. Are you making full use of what HOCON offers?"/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:image" content="/img/blog/full-potential-typesafe-config-preview.png">
+    <meta property="og:description" content="Typesafe config is ubiquitous in Scala and is written in HOCON, a powerfully expressive superset of JSON, but it&#39;s common to overlook some key features which can simplify how you write your config. Are you making full use of what HOCON offers?">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/full-potential-typesafe-config.html">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+    <title>Are you using the full potential of typesafe config? | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">Are you using the full potential of typesafe config?</h1>
+    <p><a href="https://github.com/lightbend/config">Typesafe config</a> is a popular, even ubiquitous means of configuring applications in Scala,
+using a custom format developed by Lightbend, HOCON. HOCON is a JSON superset, meaning any JSON is also
+valid HOCON – but with many additional features to make it easier for humans to read and write, less verbose,
+and more flexible.</p>
+<p>It&#39;s a very popular choice due to how quickly and easily you can configure your Scala applications, and so
+most Scala developers are familiar with it to some extent. However, it&#39;s all too frequent to see developers
+not appreciate some of the most powerful features of the format.</p>
+<p>Today I&#39;ll cover some quality of life features which are often overlooked and how I&#39;ve found them useful,
+and the mistakes I&#39;ve often seen made in configuring applications with typesafe config.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#hocon-basics">HOCON Basics</a><ul>
+<li><a href="#declaring-properties-multiple-times">Declaring properties multiple times</a></li>
+<li><a href="#substitutions">Substitutions</a></li>
+<li><a href="#merging-objects">Merging objects</a></li>
+</ul>
+</li>
+<li><a href="#managing-config">Managing config</a><ul>
+<li><a href="#the-default-config-file">The default config file</a></li>
+<li><a href="#runtime-arguments">Runtime arguments</a></li>
+<li><a href="#environment-variables">Environment variables</a></li>
+<li><a href="#an-external-config-file">An external config file</a></li>
+</ul>
+</li>
+<li><a href="#common-mistakes">Common mistakes</a><ul>
+<li><a href="#using--d-params">Using -D params</a></li>
+<li><a href="#leaking-app-config-into-infrastructure-code">Leaking app config into infrastructure code</a></li>
+</ul>
+</li>
+<li><a href="#the-solution">The solution</a></li>
+<li><a href="#tldr">tl;dr</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="hocon-basics">HOCON Basics</h1>
+<p>As a JSON superset language, HOCON firstly gives you a structured, readable means of writing your config.
+This includes trimming down unnecessary quotes where not needed, eliminating commas, and adding comments.
+It also lets you write nested objects as entire nested sections, like JSON, or simply refer to paths using
+a dotty syntax, or any combination of the two.</p>
+<pre><code class="language-hocon">db {
+  postgres {
+    host = localhost
+    port = 5432
+  }
+
+  redis {
+    host = localhost
+    port = 6379
+  }
+}
+
+queues.rabbitmq {
+  host = localhost
+  port = 5672
+}
+
+assets.images.stock-photos = file:///usr/share/stock-photos/
+</code></pre>
+<p>These simple features already make HOCON nice to write, but there are several powerful features which are
+easy to miss. The below is by no means comprehensive, but covers some features I&#39;ve found useful and some
+situations in which I&#39;ve used them. For a more comprehensive guide check out the <a href="https://github.com/lightbend/config#using-hocon-the-json-superset">documentation</a>.</p>
+<h2 id="declaring-properties-multiple-times">Declaring properties multiple times</h2>
+<p>You can declare properties and sections multiple times, and the latest version to appear will be taken:</p>
+<pre><code class="language-hocon">phrases {
+  greeting = hello
+  greeting = bonjour
+  confirmation = yes
+}
+
+phrases {
+  confirmation = oui
+}
+
+phrases.rejection = non
+</code></pre>
+<p>...resulting in a final selection of <code>bonjour</code>, <code>oui</code>, and <code>non</code> in that section. This means you can easily
+override values specified in default config by whole section or by individual property.</p>
+<p>This also means you could concatenate <code>base.conf</code> with <code>prod.conf</code> to update values you&#39;ve specified in
+your <code>prod.conf</code> without affecting anything else – this can be useful when your deployment is varied. For
+example, one copy of your application is for Europe and one is for North America, so you might concatenate
+<code>europe.conf</code> and <code>prod.conf</code> to create your full config file for Europe.</p>
+<h2 id="substitutions">Substitutions</h2>
+<p>You can reuse or embed other properties into different config parameters, allowing you to refactor common
+values into a section, or concatenate values to build a longer string. For example, building full URLs from
+components, or reusing a secret to talk to multiple applications:</p>
+<pre><code class="language-hocon"># You can use something like a meta namespace to indicate these properties aren&#39;t directly
+# read by your application but allow them to be used in properties which are; this is optional
+# but may aid readability
+meta {
+  app-secret = MY_SECRET
+
+  scraper {
+    protocol = https
+    host = www.example.com
+    port = 8080
+    path = /stuff
+    root = ${meta.scraper.protocol}&quot;://&quot;${meta.scraper.host}&quot;:&quot;${meta.scraper.port}${meta.scraper.path}
+  }
+}
+
+scraper {
+  cars-endpoint = ${meta.scraper.root}/cars
+  sofas-endpoint = ${meta.scraper.root}/sofas
+  secret = ${meta.app-secret}
+}
+
+data-service {
+  secret = ${meta.app-secret}
+}
+</code></pre>
+<h2 id="merging-objects">Merging objects</h2>
+<p>Objects can be merged by putting them in series with each other, which means it&#39;s easy to merge extra values
+into a set of defaults.</p>
+<p>I&#39;ve found this very useful in the past when writing a data streaming framework. The framework defined a
+standard data pipeline to work with multiple different types of data, and you could run multiple pipelines
+in parallel to handle multiple data feeds. Each pipeline needed several properties to be configured, some of
+which were more likely to need changing than others. That meant my config looked something like this:</p>
+<pre><code class="language-hocon"># Provided in the library (reference.conf)
+defaults {
+  pipeline {
+    feed-name = null
+    buffer-size = 1000
+    alarm-threshold = 10s
+    max-packet-size = 10K
+  }
+}
+
+# In the service (application.conf)
+pipelines {
+  football ${defaults.pipeline} {
+    feed-name = football
+  }
+  basketball ${defaults.pipeline} {
+    feed-name = basketball
+    alarm-threshold = 30s
+    max-packet-size = 1M
+  }
+}
+</code></pre>
+<hr>
+<h1 id="managing-config">Managing config</h1>
+<p>So how do we use HOCON to configure our application? Where does this config live, and how do we configure
+per environment?</p>
+<h2 id="the-default-config-file">The default config file</h2>
+<p>Basics first. The &quot;default&quot; config file of your application will usually live in
+<code>src/main/resources/application.conf</code>. This might look something like this:</p>
+<pre><code class="language-hocon">http {
+  bind = localhost
+  port = 8080
+}
+
+db {
+  postgres {
+    host = localhost
+    port = 5432
+  }
+}
+</code></pre>
+<p>This is the version that is built into your application&#39;s <code>.jar</code> file, so this is the version which
+contains your defaults. In my example, we&#39;re configuring a simple application which talks to a postgres
+database and serves an HTTP interface. Since this is baked into the <code>.jar</code>, our defaults contain sensible
+values you might use in a non-production environment, making it easy to run during development with no
+further configuration, where we might be running dependent services locally.</p>
+<p>Since libraries which use typesafe config (e.g. Akka) will provide a variety of their own properties to
+configure, and their own defaults in <code>reference.conf</code> included in the library, you can also configure
+properties of the library as needed, and use the same approach for your own libraries.</p>
+<p>Having all our config baked into the build artifact isn&#39;t much use to us, though. How do we configure it in a
+particular environment, or on a particular host or container? We have a few options.</p>
+<h2 id="runtime-arguments">Runtime arguments</h2>
+<p>At runtime, we can override any property we like using runtime arguments as <code>-D</code> parameters with dotty
+config paths. This might look like:</p>
+<pre><code class="language-bash">java -Dhttp.bind=0.0.0.0 postgres.host=postgres.example.com -jar myapp.jar
+</code></pre>
+<h2 id="environment-variables">Environment variables</h2>
+<p>We can take the value of environment variables by specifying them in the config file. We can also take them
+if present and fall back to something else otherwise. For example, we could change our example to look like:</p>
+<pre><code class="language-hocon">http {
+  bind = ${?MYAPP_BIND}
+  bind = localhost
+  port = 8080
+}
+
+db {
+  postgres {
+    host = ${?POSTGRES_HOST}
+    host = localhost
+    port = 8080
+  }
+}
+</code></pre>
+<p>Now we can configure <code>MYAPP_BIND</code> and <code>POSTGRES_HOST</code> variables in our environment to override these
+properties, and they&#39;ll assume the same values previously if we haven&#39;t done so. This can be very useful in
+a local development environment, as you can simply set some preferred properties in a <code>.bashrc</code>. It can also
+be useful when running your application in docker, as you can easily inject in these env vars using <code>-e</code> when
+running your container.</p>
+<h2 id="an-external-config-file">An external config file</h2>
+<p>We can provide a separate config file, and override only what we need to:</p>
+<pre><code class="language-hocon">include &quot;application&quot;
+
+host.bind = 0.0.0.0
+db.postgres.host = postgres.example.com
+</code></pre>
+<p>Here we include the default application config from the jar file, and then we override the properties we need
+to change. Note that, in general, you will always want to fall back on this file, as by design you are
+required to configure every valid property of the application. What you don&#39;t want to do is copy out every
+property again in order to do so, which makes you repeat yourself and exposes you to errors when new config
+options are added.</p>
+<h1 id="common-mistakes">Common mistakes</h1>
+<p>We&#39;ve looked at a few simple, handy ways of configuring your application per environment or use case. I&#39;ve
+deliberately left external config files fresh in your mind here because they are written in HOCON, making
+them by far the most expressive.</p>
+<p>Leaving that aside for the moment, let&#39;s look at two common mistakes in creating your configuration, which
+generally boil down to not using HOCON:</p>
+<h2 id="using--d-params">Using -D params</h2>
+<p>While useful for overriding a parameter or two in development, say <code>-Ddebug=true</code> for example, let&#39;s imagine
+an example where you need to configure several properties:</p>
+<pre><code class="language-hocon"># Default application.conf
+http {
+  bind = localhost
+  port = 8080
+}
+
+db.postgres {
+  host = localhost
+  port = 5432
+  username = postgres
+  password = postgres
+}
+
+auth-service {
+  host = localhost
+  port = 8081
+  secret = DEVSECRET
+}
+
+user-blacklist = [hacker1, hacker2, hacker3]
+</code></pre>
+<p>And let&#39;s write the line to run application in production:</p>
+<pre><code class="language-bash">java \
+  -Dhttp.bind=0.0.0.0 \
+  -Dhttp.port=80 \
+  -Ddb.postgres.host=postgres.example.com \
+  -Ddb.postgres.username=myappuser \
+  -Ddb.postgres.password=&#39;pr0dP@ssword!&#39; \
+  -Dauth-service.host=auth.example.com \
+  -Dauth-service.port=8080 \
+  -Dauth-service.secret=&#39;pr0d_sh@red_s3cr3t&#39; \
+  -Duser-blacklist.4=hacker4
+</code></pre>
+<p>...bit of a mouthful, and a fair bit trickier to read than the HOCON we&#39;re overriding. We can&#39;t use any of
+the power of HOCON to help us here. This is especially noticeable with the <code>user-blacklist</code> property,
+where altering lists is variably clunky or impossible.</p>
+<p>Another concern you have is that you&#39;re writing your config directly into the command which will be run,
+which means any user on the running host can use tools like <code>ps</code> to see the full text of the command –
+including a database password and a secret API key in this case.</p>
+<p>You could similarly use environment variables to configure every line of your config, but again you have
+the same problems of reducing your nice structured config to flat key-value pairs, and the additional problem
+that you have to add a lot of base config to record the environment variables you want to use.</p>
+<h2 id="leaking-app-config-into-infrastructure-code">Leaking app config into infrastructure code</h2>
+<p>Continuing the theme of not using HOCON and losing its benefits, the second mistake I&#39;ve seen frequently is
+ignoring HOCON and configuring the application in your infrastructure code. I will demonstrate what I mean
+using ansible here, but I&#39;ve seen this same mistake made with ansible, puppet, kubernetes and terraform.</p>
+<p>Consider that you&#39;re trying to configure the same application as above, and now you have an ansible variables
+file:</p>
+<pre><code class="language-yaml"># group_vars/production.yml
+http_bind: 0.0.0.0
+http_port: 80
+postgres_host: postgres.example.com
+postgres_username: {{ secrets.postgres_user }}
+postgres_password: {{ secrets.postgres_password }}
+auth_host: auth.example.com
+auth_port: 80
+auth_secret: {{ secrets.auth_secret }}
+user_blacklist: [user1, user2, user3]
+</code></pre>
+<p>When writing your config, you can then use any of the above methods to configure your application. Let&#39;s say
+you decide to use a template to write a HOCON config file.</p>
+<pre><code class="language-jinja2">http {
+  bind = {{ http_bind }}
+  port = {{ http_port }}
+}
+
+db.postgres {
+  host = {{ postgres_host }}
+  username = {{ postgres_username }}
+  password = {{ postgres_password }}
+}
+
+auth-service {
+  host = {{ auth_host }}
+  port = {{ auth_port }}
+  secret = {{ auth_secret }}
+}
+
+user-blacklist = {{ user_blacklist }}
+</code></pre>
+<p>We&#39;re writing HOCON this time, but we still have key-value parameters because our actual configuration is
+a series of ansible variables, and we have to additionally make sure they all get templated into the config
+file.</p>
+<p>This is certainly better than the version with <code>-D</code> params, as we&#39;re using YAML and that gives us some of
+our features back; we could structure our YAML rather than writing it flat, and we have a concept of lists
+again, so our blacklist isn&#39;t so awkward.</p>
+<p>The downside is twofold: we have to update two places with new variables, and we&#39;re telling ansible about
+properties it doesn&#39;t need to know about.</p>
+<h1 id="the-solution">The solution</h1>
+<p>The solution, then, is to write HOCON as much as possible, so that you get its full power and, as ever,
+Don&#39;t Repeat Yourself. In my example above, this isn&#39;t possible for everything. It&#39;s very likely that
+hostnames will be provided by your infrastructure management tooling, and your secrets will be read from
+your secret management tooling, meaning you&#39;ll still need to template your config file.</p>
+<p>Likely, though, several pieces of config simply belong in your application config file. The tidiest approach
+is to keep your infrastructure config simple:</p>
+<pre><code class="language-yaml">postgres_user: {{ secrets.postgres_user }}
+postgres_password: {{ secrets.postgres_password }}
+auth_host: {{ get_auth_host() }}  # from service discovery, for example
+auth_secret: {{ secrets.auth_secret }}
+</code></pre>
+<p>and your application config structured with HOCON:</p>
+<pre><code class="language-jinja2">http.bind = 0.0.0.0
+
+db.postgres {
+  host = postgres.example.com
+  user = {{ postgres_user }}
+  password = {{ postgres_password }}
+}
+
+user-blacklist = [user1, user2, user3, user4, user5]
+</code></pre>
+<p>Tell ansible to write this template to <code>/etc/myapp/app.conf</code>, make sure <code>-Dconfig.file=/etc/myapp/app.conf</code>
+is included in your run command, and you&#39;re good to go.</p>
+<h1 id="tldr">tl;dr</h1>
+<p>To summarise, then:</p>
+<ul>
+<li>take the time to grasp some of the features of HOCON and <a href="https://github.com/lightbend/config#using-hocon-the-json-superset">read the docs</a> and you&#39;ll make
+configuring your application much easier</li>
+<li>remember to keep your config where it belongs, and write it in HOCON</li>
+</ul>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>
