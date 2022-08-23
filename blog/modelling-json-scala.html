@@ -1,0 +1,368 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,json,data,basics"/>
+    <meta name="description" content="Data modelling and JSON serialisation are very common concerns for any backend application, and Scala provides the ability to transform any JSON data into a strongly-typed set of models suitable for use within your application. This article covers some of the principles of modelling your data effectively and managing your serialisation logic, even in cases where the JSON data is poorly designed or difficult to work with."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:image" content="/img/blog/modelling-json-scala-preview.png">
+    <meta property="og:description" content="Data modelling and JSON serialisation are very common concerns for any backend application, and Scala provides the ability to transform any JSON data into a strongly-typed set of models suitable for use within your application. This article covers some of the principles of modelling your data effectively and managing your serialisation logic, even in cases where the JSON data is poorly designed or difficult to work with.">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/modelling-json-scala.html">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+    <title>Modelling JSON data in Scala | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">Modelling JSON data in Scala</h1>
+    <p>Data models are an important design decision in any application, and serialising your data is a key
+capability most will need in order to communicate with other services. JSON is among the most popular data
+formats used in APIs regardless of language, so naturally having a good grasp of how to (de)serialise your
+models to and from JSON is important. Today I&#39;ll focus on how to model your JSON data with case classes,
+and how to handle JSON serialisation. Note that the same principles apply regardless of format, though, and
+I have used all the same techniques to serialise to/from XML and others as needed.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#scala-json-libraries">Scala JSON libraries</a></li>
+<li><a href="#modelling">Modelling</a><ul>
+<li><a href="#basic-modelling-decisions">Basic modelling decisions</a></li>
+<li><a href="#stronger-types">Stronger types</a></li>
+<li><a href="#cleaning-up-difficult-json">Cleaning up difficult JSON</a></li>
+</ul>
+</li>
+<li><a href="#tldr">tl;dr</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="scala-json-libraries">Scala JSON libraries</h1>
+<p>Unfortunately, JSON libraries in Scala are a dime a dozen, and any 3 Scala developers will have 4 favourite
+libraries to use. Fortunately, the guiding principles of almost all of these libraries are very similar:</p>
+<ul>
+<li>We convert from <code>String</code> to and from a JSON AST (Abstract Syntax Tree) provided by the library, and from
+that AST to/from your case class models</li>
+<li>We use type classes to add JSON serialisation functionality for the types present in our models, which
+we make implicitly available</li>
+<li>The library provides implicit type classes for basic types like <code>Int</code>, <code>Double</code>, <code>String</code>, <code>List[T]</code>,
+<code>Map[String, T]</code> out of the box</li>
+<li>The library provides utilities to make it trivial to derive type classes for case classes</li>
+</ul>
+<p>There are several libraries available which all follow this basic design, including
+<a href="https://github.com/spray/spray-json">Spray JSON</a>, <a href="https://www.playframework.com/documentation/2.8.x/ScalaJson">Play JSON</a>, and <a href="https://circe.github.io/circe/">Circe</a>. I&#39;m going to be focusing
+on Spray JSON, but the principles I cover will apply regardless of your choice.</p>
+<h1 id="modelling">Modelling</h1>
+<p>For the purposes of this post, I&#39;ll be dealing with modelling some arbitrary JSON which has been provided by
+an API we don&#39;t control. This means we&#39;re focusing on building models which directly represent that data, in
+some form that&#39;s relevant to our imaginary application. We&#39;ll leave the issue of transforming or combining
+this data with other internal models for another day and just stick to representing our JSON payload.</p>
+<p>This means that we can&#39;t change the JSON – and we&#39;ll consider cases where the JSON structure is less than
+ideal, and how to handle that gracefully without creating internal models which are equally ugly.</p>
+<h2 id="basic-modelling-decisions">Basic modelling decisions</h2>
+<p>Let&#39;s first consider a fairly simple payload about library books:</p>
+<pre><code class="language-javascript">{
+  &quot;isbn&quot;: &quot;9780155658110&quot;,
+  &quot;title&quot;: &quot;Nineteen Eighty-Four&quot;,
+  &quot;author&quot;: &quot;George Orwell&quot;,
+  &quot;lastCheckedOut&quot;: &quot;2020-05-02T09:23:11Z&quot;,
+  &quot;pageCount&quot;: 450,
+  &quot;reviewRating&quot;: 4.6
+}
+</code></pre>
+<p>And a sensible model representing this data:</p>
+<pre><code class="language-scala">case class Book(
+  isbn: String,
+  title: String,
+  author: String,
+  lastCheckedOut: Instant,
+  pageCount: Int,
+  reviewRating: Double
+)
+</code></pre>
+<p>Nothing too complex here, we&#39;ve largely just picked Scala primitives matching the JSON primitives, with the
+exception of <code>lastCheckedOut</code>, where we want to parse a <code>Instant</code>. Since dates can come in many formats,
+we&#39;ll need to provide a format for <code>Instant</code> before <code>Book</code> to be able to parse this:</p>
+<pre><code class="language-scala">import java.time.Instant
+import java.time.format.DateTimeFormatter
+
+import spray.json._
+
+trait BookJsonProtocol extends DefaultJsonProtocol {
+  implicit val instantFmt = new JsonFormat[Instant] {
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+
+    override def write(instant: Instant): JsValue = JsString(formatter.format(instant))
+    override def read(v: JsValue): Instant = Instant.from(formatter.parse(v.convertTo[String]))
+  }
+
+  implicit val bookFmt = jsonFormat6(Book)
+}
+
+object BookJsonProtocol extends BookJsonProtocol
+</code></pre>
+<p>Since our JSON fields all have fairly sensible names and our types are largely simple, our case class format
+is simply <code>jsonFormat6</code>, having first provided a <code>JsonFormat[Instant]</code>. This format is slighly more direct,
+to specify ISO8601 datetime format, but still quite straightforward.</p>
+<blockquote>
+<p><strong>Note:</strong> We&#39;ve followed Spray JSON&#39;s guidelines of defining a <code>JsonProtocol</code> for our formats and
+packaging it separately, keeping our type classes separate from the models themselves. In a slightly more
+complex scenario, we&#39;d go a step further and move our <code>Instant</code> format into a <code>TimeJsonProtocol</code> which we
+extend, and perhaps make it more generic for different time formats.</p>
+</blockquote>
+<blockquote>
+<p>Some libraries suggest instead including your formats on the models&#39; companion objects, but this places
+your serialisation logic into your models, which type classes typically exist to avoid. Note that this also
+would not be possible for types beyond your control, such as <code>Instant</code>, and you&#39;d have to place them
+elsewhere regardless.</p>
+</blockquote>
+<h2 id="stronger-types">Stronger types</h2>
+<p>Depending on what&#39;s being modelled, you may also choose to use stronger types for some fields. For
+example, an ID field representing a particular type of ID might be best represented by its own type,
+especially if there are specific formatting concerns. That could be as simple as a wrapper class like
+<code>case class Isbn(value: String)</code>, which primarily acts to fistinguish the type in your code when ISBNs are
+used as keys frequently. But it may be more complex depending on encoding: an ISBN is actually comprised of
+multiple different subgroups, including a checksum digit, and you might want to capture that information.</p>
+<p>In other cases, you may have a set of valid possible values appearing in a field, such as in a &quot;status&quot; field
+or a &quot;type&quot; field, and wish to model that as an enumeration. You might even expect one of multiple different
+types of objects to appear and require an algebraic data type; that&#39;s particularly likely in lists of varied
+elements.</p>
+<p>Let&#39;s take a look at an example which includes all of these features and represents a virtual shelf of items
+a user has put on their &quot;to read/watch&quot; list:</p>
+<pre><code class="language-javascript">{
+  &quot;shelfId&quot;: &quot;10821-00001&quot;,
+  &quot;items&quot;: [
+    {
+      &quot;type&quot;: &quot;book&quot;,
+      &quot;title&quot;: &quot;Feast of Souls&quot;,
+      &quot;author&quot;: &quot;C. S. Friedman&quot;,
+      &quot;status&quot;: &quot;todo&quot;
+    },
+    {
+      &quot;type&quot;: &quot;movie&quot;,
+      &quot;title&quot;: &quot;Lucky Number Slevin&quot;,
+      &quot;director&quot;: &quot;Paul McGuigan&quot;,
+      &quot;status&quot;: &quot;done&quot;
+    }
+  ]
+}
+</code></pre>
+<p>and the models:</p>
+<pre><code class="language-scala">case class ShelfId(userId: String, shelfId: String)
+
+sealed trait MediaItem {
+  val title: String
+  val status: MediaItem.Status
+}
+object MediaItem {
+  sealed trait Status {
+    val value: String
+  }
+  object Status {
+    case object Todo extends Status {
+      override val value: String = &quot;todo&quot;
+    }
+    case object Done extends Status {
+      override val value: String = &quot;done&quot;
+    }
+  }
+
+  case class Book(title: String, author: String, status: Status) extends MediaItem
+  case class Movie(title: String, director: String, status: Status) extends MediaItem
+}
+
+case class Shelf(shelfId: ShelfId, items: List[MediaItem])
+</code></pre>
+<p>When working with cases like these, the guiding principle is to keep the model representing the fully-parsed,
+clean model, and deal with transforming to and from the simpler JSON representation in the serialisation
+code under your <code>XXXJsonProtocol</code> trait.</p>
+<p>Note that we&#39;ve used an algebraic data type, using sealed traits and case objects, for our enumeration value,
+the same way we did for our different types of media item. Since this is simply a set of enumerable values
+we could also have used Scala&#39;s <code>Enumeration</code> type or another strategy; there are a few possible ways of
+dealing with enumerations in Scala.</p>
+<p>Note also that we drop the <code>type</code> field from items since that information is now provided by the type itself.</p>
+<p>Let&#39;s take a look at what the serialisation logic might look like for the above example:</p>
+<pre><code class="language-scala">import spray.json._
+
+import com.example.blog.models._
+import com.example.blog.models.MediaItem._
+import com.example.blog.models.MediaItem.Status._
+
+trait ShelfJsonProtocol extends DefaultJsonProtocol {
+  implicit val statusFmt = new JsonFormat[Status] {
+    override def write(status: Status): JsValue = JsString(status.value)
+
+    override def read(v: JsValue): Status = v.convertTo[String] match {
+      case Todo.value =&gt; Todo
+      case Done.value =&gt; Done
+      case s =&gt; deserializationError(s&quot;Unknown status value &#39;$s&#39;&quot;)
+    }
+  }
+
+  implicit val bookFmt = jsonFormat3(Book)
+  implicit val movieFmt = jsonFormat3(Movie)
+
+  implicit val mediaItemFmt = new JsonFormat[MediaItem] {
+    override def write(item: MediaItem): JsValue = item match {
+      case b: Book =&gt; b.toJson
+      case m: Movie =&gt; m.toJson
+    }
+
+    override def read(v: JsValue): MediaItem = {
+      // Note that we allow .fields(&quot;type&quot;) to throw a NoSuchElementException if absent here since
+      // spray JSON reports errors as exceptions, but you might handle this more specifically to
+      // make your error messaging clearer
+      v.asJsObject.fields(&quot;type&quot;).convertTo[String] match {
+        case &quot;book&quot; =&gt; v.convertTo[Book]
+        case &quot;movie&quot; =&gt; v.convertTo[Movie]
+        case t =&gt; deserializationError(s&quot;Unknown item type &#39;$t&#39;&quot;)
+      }
+    }
+  }
+
+  implicit val shelfIdFmt = new JsonFormat[ShelfId] {
+    override def write(shelfId: ShelfId): JsValue = {
+      JsString(s&quot;${shelfId.userId}-${shelfId.shelfId}&quot;)
+    }
+
+    override def read(v: JsValue): ShelfId = v.convertTo[String].split(&quot;-&quot;).toList match {
+      case userId :: shelfId :: Nil =&gt; ShelfId(userId, shelfId)
+      case _ =&gt; deserializationError(s&quot;Invalid shelfId format &#39;$v&#39;&quot;)
+    }
+  }
+
+  implicit val shelfFmt = jsonFormat2(Shelf)
+
+}
+
+object ShelfJsonProtocol extends ShelfJsonProtocol
+</code></pre>
+<p>A few things to unpack here:</p>
+<ul>
+<li>The status format simply maps the expected set of strings into our status types; since we annotated the
+string value onto the types, that&#39;s even simpler in the write direction</li>
+<li>For media items, we define individual formats for <code>Book</code> and <code>Movie</code>, which are simple enough in
+themselves, and then write a format for the overall <code>MediaItem</code> which will use the <code>type</code> field to figure
+out which format it should be trying to use, and then delegate to it. Since we have a nice clear <code>type</code>
+field this is quite easy in this case.</li>
+<li>For our shelf ID, we&#39;ve got two numbers separated by a dash, which we&#39;ve decided are our user ID and
+shelf ID respectively, so we&#39;ve written a short format which parses that information out of the JSON
+string where needed in order to build our case class.</li>
+<li>Finally, with all the complex types now dealt with, the <code>Shelf</code> itself is just a straightforward
+<code>jsonFormat2</code>.</li>
+</ul>
+<h2 id="cleaning-up-difficult-json">Cleaning up difficult JSON</h2>
+<p>I&#39;ve covered a couple of examples where the JSON data is quite simple to work with, but that&#39;s not always the
+case, and often the readability of your data will be beyond your control. I&#39;ve run into several examples in
+the past of quite arcane JSON (or worse, 20-year-old XML) payloads which are difficult to tame.</p>
+<p>The key thing to remember is: <strong>your internal models don&#39;t have to look anything like your JSON</strong>.</p>
+<p>Here&#39;s an example compounding several mistakes I&#39;ve had to deal with in the past:</p>
+<pre><code class="language-javascript">{
+  &quot;MSGDat11&quot;: &quot;Sun, Aug 7 2022&quot;,
+  &quot;MsgTim12&quot;: &quot;17:11 PM&quot;,
+  &quot;BkDtails13&quot;: [
+    {
+      &quot;Tit118&quot;: &quot;Nineteen Eighty-Four&quot;
+    },
+    {
+      &quot;AutNam121&quot;: &quot;George Orwell&quot;
+    },
+    {
+      &quot;ISBN117&quot;: &quot;9780155658110&quot;
+    }
+  ],
+  &quot;IsFam812&quot;: &quot;Yes&quot;,
+  &quot;ForSal813&quot;: &quot;No&quot;,
+  &quot;NumPag921&quot;: &quot;450&quot;
+}
+</code></pre>
+<p>This looks like an extreme example but contains several issues I&#39;ve had to work around in the past:</p>
+<ul>
+<li>The field names are unreadable and inconsistent</li>
+<li>Several types are poor choices, e.g. string number of pages and especially <code>Yes / No</code> instead of boolean</li>
+<li>Our &quot;book details&quot; should be a JSON object but are presented as a list of JSON objects, in indeterminate
+order, providing one field each.</li>
+<li>I&#39;ve been brief with my example but we may have another 50 top-level fields in this object, deserving
+of further structure, and which would cause serious pain with case classes</li>
+</ul>
+<p>I will mention briefly here that spray json gives you some tools to help with the simpler concern of field
+names, e.g. <code>jsonFormat(&quot;MSGDat11&quot;, &quot;MsgTim12&quot;, ..., MyModel.apply)</code> but reshaping the JSON data into a
+sensible structure to parse into your model can be hard work for some of these issues, and I&#39;ll leave the
+details of that as an exercise for the reader, and to be revisited in future.</p>
+<p>Regardless, amistake I&#39;ve seen a few times is fearing having to write logic into the serialisation layer,
+such as we&#39;ve seen in some examples above, and preferring to write models directly equivalent to the JSON.
+Largely the reasoning here is not wanting to get to grips with how to write custom serialisers, and the
+argument I&#39;ve heard for this approach is that minimal serialisation logic makes it easy to see what&#39;s being
+modelled. There are many problems with this approach, though, and with an example as ugly as the one above,
+several become obvious:</p>
+<ul>
+<li>It leaks serialisation details into your code: you have to deal with unreadable, confusing, maybe
+misspelt field names, along with incorrect types and strange structures</li>
+<li>Function types in scala only go up to <code>Function22</code> – that means that with more than 22 fields in a
+single case class, or as arguments to a single function call, your library&#39;s utilities start breaking
+down. It&#39;ll also thwart your own efforts to refactor to stay DRY – you can&#39;t pass around your own
+25-argument functions to help map your field names, either. Worse still, this issue may only become
+evident after hours of committing to the approach or when you need to add new fields to your model months
+later.</li>
+</ul>
+<p>These mistakes are usually made because the fear of writing serialisers outweighs the fear of dealing with
+bad JSON data, but before deciding you want to avoid any serialisation logic at all, keep in mind exactly
+how bad data can get.</p>
+<h1 id="tldr">tl;dr</h1>
+<p>In brief:</p>
+<ul>
+<li>Always write clean, sensibly-typed models for your data, even if the serialised data has to look
+different.</li>
+<li>Decide what your ideal model should look like, and then figure out how to write serialisation logic to
+get there.</li>
+<li>Keep serialisation concerns in your serialisation layer, and don&#39;t be afraid to write custom formats if
+needed.</li>
+<li>Consult <a href="https://github.com/spray/spray-json">the docs</a> and make use of helpers to make writing your own formats easier.</li>
+</ul>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>

@@ -528,12 +528,12 @@ h1.section-title {
 .blog-post h2, .blog-post h3 {
   margin: 20px 0 10px 0;
 }
-.blog-post p > code {
+.blog-post :not(pre) > code {
   background: #eee;
   color: #ad2b3d;
   border: solid 1px #ccc;
   display: inline-block;
-  padding: 2px 5px;
+  padding: 0 5px;
 }
 .blog-post pre {
   margin: 20px 0 !important;
