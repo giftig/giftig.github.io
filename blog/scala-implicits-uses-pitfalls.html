@@ -1,0 +1,368 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,implicits,typeclasses,best-practices"/>
+    <meta name="description" content="Implicits in Scala aim to make your code simpler and more concise by abstracting away some of the details of your implementation into some implicitly-resolved utilities. This keeps your concerns separated, keeping low-level logic like serialisation or the specifics of accessing data structures away from higher-level logic. Today we&#39;ll take a look at how to write implicits, how they&#39;re resolved at compile time, and good and bad use cases for them."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:title" content="Scala implicits: uses and pitfalls | Blog | Scalable Solutions">
+    <meta property="og:type" content="article">
+    <meta property="og:image" content="https://www.scalable-solutions.co.uk/img/blog/scala-implicits-uses-pitfalls-preview.png">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/scala-implicits-uses-pitfalls.html">
+
+    <meta property="og:site_name" content="Scalable Solutions">
+    <meta property="og:description" content="Implicits in Scala aim to make your code simpler and more concise by abstracting away some of the details of your implementation into some implicitly-resolved utilities. This keeps your concerns separated, keeping low-level logic like serialisation or the specifics of accessing data structures away from higher-level logic. Today we&#39;ll take a look at how to write implicits, how they&#39;re resolved at compile time, and good and bad use cases for them.">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+
+    
+      
+      <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="1d412dda-32f4-4f69-81d2-1e42e89398ee" data-blockingmode="auto" type="text/javascript"></script>
+
+      
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-VGZYW1XZV5"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          wait_for_update: 500
+        });
+        gtag('js', new Date());
+        gtag('config', 'G-VGZYW1XZV5', {anonymize_ip: true});
+      </script>
+
+    
+
+    <title>Scala implicits: uses and pitfalls | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">Scala implicits: uses and pitfalls</h1>
+    <p>Implicits in Scala aim to make your code simpler and more concise by abstracting away some of the details of
+your implementation into some implicitly-resolved utilities. This keeps your concerns separated, keeping
+low-level logic like serialisation or the specifics of accessing data structures away from higher-level
+logic.</p>
+<p>Today we&#39;ll take a look at how to write implicits, how they&#39;re resolved at compile time, and
+good and bad use cases for them.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#types-of-implicits">Types of implicits</a><ul>
+<li><a href="#implicit-arguments">Implicit arguments</a></li>
+<li><a href="#implicit-classes">Implicit classes</a></li>
+<li><a href="#implicit-conversions">Implicit conversions</a></li>
+</ul>
+</li>
+<li><a href="#organising-implicits">Organising implicits</a></li>
+<li><a href="#generic-implicits">Generic implicits</a></li>
+<li><a href="#a-horror-story">A horror story</a></li>
+<li><a href="#tldr">tl;dr</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="types-of-implicits">Types of implicits</h1>
+<p>There are a few types of implicits in Scala, and they all work at compile time, by providing the compiler
+with a means of resolving what would otherwise be a type error or missing argument.</p>
+<h2 id="implicit-arguments">Implicit arguments</h2>
+<p>The most straightforward implicits to understand are implicit argument lists in a function or class. Consider
+the following, a very common use case for implicits:</p>
+<pre><code class="language-scala">class FishRepository(host: String)(implicit ec: ExecutionContext) {
+  def findOne(id: String): Future[Fish] = ???
+}
+</code></pre>
+<p>Here we define a repository which deals with fetching records about scaly sea creatures from a database.
+Since our repository will work with concurrency using <code>Future</code>s, it&#39;s going to need to know which
+<code>ExecutionContext</code> to use. We want that to be configurable further up the stack, since we might need to
+tweak our execution contexts based on load in different parts of the application, and most likely want
+database IO to run on a dedicated future pool.</p>
+<p>To save us the effort of passing in an explicit <code>ExecutionContext</code> everywhere it may be needed throughout
+the stack, we simply declare it an implicit argument and allow it to be resolved automatically.</p>
+<pre><code class="language-scala">implicit val ec: ExecutionContext = ExecutionContext.global
+
+val fisher = new FishRepository(&quot;localhost&quot;)  // implicit ec is filled in for us
+</code></pre>
+<p>To fill in these implicit arguments, the compiler will do the following:</p>
+<ol>
+<li>Notice that you&#39;ve not provided the implicit argument list</li>
+<li>Look for definitions in scope marked <code>implicit</code> with type <code>ExecutionContext</code></li>
+<li>Having found <strong>exactly one</strong>, provide it to the function</li>
+<li>Repeat from (2) for any other arguments in this set of brackets</li>
+</ol>
+<p>It&#39;s important to note that point (3) here means you have to be careful with scoping your implicits, and with
+which types are declared as implicit arguments. If an implicit can be fulfilled in multiple ways it will
+simply fail, and you&#39;ll have to either change the scope of your implicits or provide the arguments
+explicitly instead. In general they should be <em>very specific</em> types, to avoid confusion or ambiguity about
+what is expected.</p>
+<p>If you defined an implicit <code>String</code> argument, for example, it could mean anything – a name, a hoststring, a
+password, a type of root vegetable. An implicit <code>Int</code> might be a buffer size, a rate limit, a concurrency
+limit, or all of the above. To avoid this, use a specific type, creating one if needbe – e.g.
+<code>case class Parallelism(val value: Int)</code> is one I&#39;ve used in the past to encapsulate the parallelism setting
+desired in akka stream components.</p>
+<h2 id="implicit-classes">Implicit classes</h2>
+<p>Implicit classes are typically used in Scala to provide type class functionality. This is a means of
+achieving &quot;ad hoc polymorphism&quot; – adding a capability to a type on the fly, and without needing to modify
+or have any control over the type in question.</p>
+<p>An excellent example of type classes in Scala, and one which I <a href="modelling-json-scala.html">touched upon last week</a>,
+is adding JSON serialisation functionality to your models. Here&#39;s a simplified example which acts as CSV
+encoding behaviour, currently for a single case class:</p>
+<pre><code class="language-scala">case class Fish(species: String, age: Int, endangered: Boolean)
+
+implicit class FishEncoder(fish: Fish) {
+  def toCsv: String = Seq(fish.species, fish.age, fish.endangered).mkString(&quot;,&quot;)
+}
+</code></pre>
+<p>This allows us to treat <code>toCsv</code> as a method of <code>Fish</code>, even though it&#39;s not defined on the class:</p>
+<pre><code class="language-scala">&gt; Fish(&quot;Salmon&quot;, 12, false).toCsv
+res1: String = &quot;Salmon,12,false&quot;
+</code></pre>
+<p>Defining a type class to a single specific type like this isn&#39;t very helpful in the case of a JSON or CSV
+encoder, so we&#39;ll <a href="#generic-implicits">revisit this example</a> shortly to make it more generic.</p>
+<p>Here&#39;s what the compiler is doing in this case:</p>
+<ol>
+<li>Look for a method called <code>toCsv</code> defined on <code>Fish</code> or one of its parents</li>
+<li>Fail to find that, so now look for in-scope implicit classes for <code>Fish</code> which might provide one</li>
+<li>Find <code>FishEncoder</code>, instantiate it with our <code>Fish</code>, and call <code>toCsv</code> on this instance instead</li>
+</ol>
+<h2 id="implicit-conversions">Implicit conversions</h2>
+<p>Firstly, note that implicit conversions are <strong>no longer recommended for use</strong>, and you should use implicit
+classes to achieve the same thing instead. In fact, standard library tooling like the implicit
+conversion-based <code>scala.concurrent.JavaConversions</code> was deprecated in favour of the implicit class-based
+<code>scala.concurrent.JavaConverters</code> several versions ago, and since removed entirely in 2.13.</p>
+<p>Implicit conversions convert one type to another using an implicit function. These are the &quot;most magical&quot;
+types of implicits in that the process is entirely implicit – unlike implicit classes, where you call a
+method, hinting that there&#39;s an implicit class involved if it&#39;s not defined on the class itself. With
+implicit conversions, you can simply use the source type as if it were the target type.</p>
+<p>Consider the following:</p>
+<pre><code class="language-scala">import scala.language.implicitConversions
+
+case class Fish(species: String, age: Int, endangered: Boolean)
+case class FishSummary(fishCount: Int, hasEndangered: Boolean)
+
+implicit def fishToSummary(fish: Seq[Fish]): FishSummary = {
+  FishSummary(fish.length, fish.exists { _.endangered })
+}
+</code></pre>
+<p>With the implicit conversion defined and in scope, we can simply treat a <code>Seq[Fish]</code> as if it were a
+<code>FishSummary</code>:</p>
+<pre><code class="language-scala">&gt; val summary: FishSummary = Seq(Fish(&quot;Salmon&quot;, 12, false), Fish(&quot;Atlantic Halibut&quot;, 9, true))
+summary: FishSummary = FishSummary(2, true)
+
+// --- or, pass it into a function which expects a FishSummary, like:
+def printSummary(summary: FishSummary): Unit = print(summary)
+
+&gt; printSummary(Seq(Fish(&quot;Salmon&quot;, 12, false), Fish(&quot;Atlantic Halibut&quot;, 9, true)))
+FishSummary(2,true)
+</code></pre>
+<p>This time, the compiler resolves the implicit as follows:</p>
+<ol>
+<li>Check that the argument is the correct type, i.e. <code>Seq[Fish]</code> conforms to type <code>FishSummary</code></li>
+<li>Seeing that it doesn&#39;t, look for an in-scope implicit conversion which takes a <code>Seq[Fish]</code> and
+produces <code>FishSummary</code></li>
+<li>Call the implicit conversion to produce the type which the compiler expected, <code>FishSummary</code></li>
+</ol>
+<p>But, to reiterate: implicit conversions are <strong>no longer recommended</strong> since they&#39;re too prone to be
+confusing: since version 2.10, the compiler will produce a warning if you define them. You can acknowledge
+this and switch off the warning by importing <code>scala.language.implicitConversions</code> as shown above. In
+extremely narrow use cases a locally-scoped implicit conversion may produce a small readability benefit, so
+this will allow you to use them without warnings if you really need one.</p>
+<p>To perform the same operation shown above using an implicit class, you could use:</p>
+<pre><code class="language-scala">implicit class RichFishSeq(fish: Seq[Fish]) {
+  def toSummary: FishSummary = FishSummary(fish.length, fish.exists { _.endangered })
+}
+
+val summary: FishSummary = {
+  Seq(Fish(&quot;Salmon&quot;, 12, false), Fish(&quot;Atlantic Halibut&quot;, 9, true)).toSummary
+}
+</code></pre>
+<p>Note that this is, regardless, quite a contrived example, and likely too specific to be a good use case for
+an implicit at all. A simple utility function to create the summary is likely to be much easier to
+understand in this case. Exercise restraint in deciding when to use an implicit.</p>
+<hr>
+<h1 id="organising-implicits">Organising implicits</h1>
+<p>For implicits to work, they have to be in scope when they&#39;re used. Given that the purpose of implicits is to
+make your code concise and readable and avoid mixing layers of logic, you&#39;ll likely want to package them
+separately and reusably.</p>
+<p>Typically, implicits are packaged like this:</p>
+<pre><code class="language-scala">trait FishImplicits {
+  implicit class RichFishSeq(fish: Seq[Fish]) {
+    def toSummary: FishSummary = ???
+  }
+
+  // More fish-related puns / converters
+}
+
+object FishImplicits extends FishImplicits
+</code></pre>
+<p>This is a standard pattern you&#39;ll see in many libraries, as it allows you to use either
+<code>import FishImplicits._</code> or <code>extends FishImplicits</code> to bring your implicits into scope. This gives you some
+flexibility to compose traits to collect together implicits, or limit their scope by importing. This, in
+turn, allows you to control the exact scope of your implicits to minimise confusion.</p>
+<p>Note also that we&#39;ve also used <code>Implicits</code> in the name, making it very clear that we&#39;re bringing in some
+implicits. The name may be slightly more specific where appropriate, e.g. Spray JSON implicits are defined in
+<code>XXXJsonProtocol</code> traits, and the standard library scala-to-java collection converters are called
+<code>AsScalaConverters</code>. In all cases we aim for clarity that implicits are involved and that we&#39;re effectively
+bringing in a new DSL. This gives us a heads up of where to look if we&#39;re experiencing unexpected behaviour
+or wondering about unexpected syntax, as unannounced implicits can cause real pain.</p>
+<p>Finally, a specific call-out: for all of the reasons above, do not be tempted to place implicits in the
+package object. Package objects are generally best avoided entirely, as they can make scoping confusing
+regardless, but that&#39;s further compounded when you&#39;re using implicits. Implicits should always involve a
+clear import as a heads up that they&#39;re present.</p>
+<hr>
+<h1 id="generic-implicits">Generic implicits</h1>
+<p>Implicit classes become even more powerful when they&#39;re combined with generic types, as I hinted at earlier
+when describing how a typical JSON (or CSV) library might work. A full discussion of this is best left for
+another day, but to complete our earlier thought, let&#39;s have a quick look at how a typical JSON library
+works, by thinking about how our <code>toCsv</code> API might be completed for generic types:</p>
+<pre><code class="language-scala">// We need to provide a CsvEncoding subclass for each type we want to encode to CSV
+trait CsvEncoding[T] {
+  def encode(t: T): String
+}
+
+// The core of the CSV encoder implicits; this defines any type as encodable to CSV
+// if an implicit CsvEncoding is available, using the toCsv method
+trait CsvImplicits {
+  implicit class CsvEncodable[T : CsvEncoding](t: T) {
+    def toCsv: String = implicitly[CsvEncoding[T]].encode(t)
+  }
+}
+
+// Our type-specific encodings
+trait FishCsvEncodings {
+  implicit object FishCsvEncoding extends CsvEncoding[Fish] {
+    override def encode(fish: Fish): String = {
+      Seq(fish.species, fish.age, fish.endangered).mkString(&quot;,&quot;)
+    }
+  }
+}
+
+// Finally, just bring both the CSV implicits and our fish CSV encodings into scope
+object App extends CsvImplicits with FishCsvEncodings {
+  val fishy: String = Fish(&quot;trout&quot;, 11, false).toCsv
+}
+</code></pre>
+<p>This works by defining a <code>CsvEncodable</code> type which will work for any type which has an implicit <code>CsvEncoding</code>
+available. The <code>.toCsv</code> behaviour comes from <code>CsvEncodable</code>, and it falls back on the definition you&#39;ve
+provided via a <code>CsvEncoding</code> instance. Bring both the implicit class and your set of implicit encoders into
+scope, and the API works as expected.</p>
+<p>Two things to clear up:</p>
+<ul>
+<li>Firstly, <code>[T : CsvEncoding]</code> is a syntactic sugar which requires a <code>CsvEncoding[T]</code> to be in scope</li>
+<li>Secondly, <code>implicitly[T]</code> is a function which takes an implicit <code>T</code> and simply returns it; it&#39;s used to
+refer to the implicit instance without having a name for it</li>
+</ul>
+<p>With that sugar removed, this is defined as:</p>
+<pre><code class="language-scala">implicit class CsvEncodable[T](t: T)(implicit ev: CsvEncoding[T]) {
+  def toCsv: String = ev.encode(t)
+}
+</code></pre>
+<p>There are a few ways which this could all be improved, of course, as our CSV &quot;encoder&quot; is very naive. We may
+also consider an additional DSL to add <code>toCsvString</code> to types to determine how individual fields should be
+converted to strings before inserting into the CSV, rather than assuming calling <code>.toString</code> on them produces
+the desired result. I leave it to the reader to think about other improvements we could make here.</p>
+<hr>
+<h1 id="a-horror-story">A horror story</h1>
+<p>Since I&#39;ve touched a few times on some potential pitfalls of using implicits poorly, with too-weak types,
+poor scoping, or simply overzealousness, I&#39;d like to share a horror story from a codebase I had to work with
+several years ago.</p>
+<p>The codebase in question was a large monolithic application which generally had a lot of problems, including
+very weak types used, frequent use of <code>Map[String, Any]</code> and similar instead of case classes, large numbers
+of fields combined in difficult-to-follow ways, a 55-minute build time, very difficult to parse logs, poor
+test coverage, and a structure which made unit testing difficult.</p>
+<p>All of this contributed to slow development, but one particular implicit incident is engraved in my memory.</p>
+<p>I first stumbled into this by attempting to call a method like:</p>
+<pre><code class="language-scala">def store(id: ObjectId, title: String, encoding: String, date: Instant): Future[Unit]
+</code></pre>
+<p>like this:</p>
+<pre><code class="language-scala">repository.store(title, id, encoding, Instant.now())
+</code></pre>
+<p>If you&#39;re keen-eyed, you&#39;ll see that I&#39;ve transposed the first two arguments. This is often a drawback of
+having too-weak types, and if both were <code>String</code>s I&#39;d likely only find this out during a test run, or in this
+application, by carefully scrutinising logs or database records to find that my ID was wrong. But with one
+argument having type <code>ObjectId</code> this simply won&#39;t compile, and I&#39;ll immediately see the problem. Right?
+Wrong.</p>
+<p>Enter an implicit conversion, defined in the package object, in a package with 100+ classes, hidden from
+sight:</p>
+<pre><code class="language-scala">implicit def any2ObjectId(a: Any): ObjectId = a match {
+  case id: ObjectId =&gt; id
+  case str: String =&gt; ObjectId(str)
+  case _ =&gt; throw new Exception(&quot;Bad object ID&quot;)
+}
+</code></pre>
+<p>Unhelpfully, this broad implicit was trying to correct my compile error by forcing the type to <code>ObjectId</code> if
+I provided a <code>String</code>, or anything else for that matter. Combined with other issues in the codebase, the
+resulting camouflaged error took a staggering two weeks to identify.</p>
+<p>If you&#39;re keen-eyed again, you may also notice that the first branch of the <code>match</code> here is unreachable:
+the compiler will not reach for the implicit conversion if it already has an <code>ObjectId</code>, so this could not be
+called with one. With that in mind, I&#39;d like to also give an honourable mention to another implicit I found
+alongside it:</p>
+<pre><code class="language-scala">implicit def any2Any(a: Any): Any = a match {
+  case id: ObjectId =&gt; id
+  case str: String =&gt; ObjectId(str)
+  case _ =&gt; throw new Exception(&quot;Bad object ID&quot;)
+}
+</code></pre>
+<p>...which, thankfully, does nothing at all.</p>
+<p>We collectively resolved to eliminate these implicits, which was a long process, as deleting some of them
+spawned several hundred compile errors all across a monolith a dozen developers were actively working on.</p>
+<hr>
+<h1 id="tldr">tl;dr</h1>
+<p>An executive summary:</p>
+<ul>
+<li>Use implicits to separate high-level and low-level logic in a concise way, or to pass configuration
+arguments down the stack without repeating yourself</li>
+<li>Keep your types strong, your use of implicits very transparent, and only use implicits if they add
+readability and do not cause confusion. Think carefully whether implicits are an improvement.</li>
+<li>Do not use implicit conversions; use implicit classes instead.</li>
+</ul>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>

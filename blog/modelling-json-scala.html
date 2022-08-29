@@ -98,8 +98,8 @@ libraries to use. Fortunately, the guiding principles of almost all of these lib
 <ul>
 <li>We convert from <code>String</code> to and from a JSON AST (Abstract Syntax Tree) provided by the library, and from
 that AST to/from your case class models</li>
-<li>We use type classes to add JSON serialisation functionality for the types present in our models, which
-we make implicitly available</li>
+<li>We use [type classes][blog-implicit-classes] to add JSON serialisation functionality for the types
+present in our models, which we make implicitly available</li>
 <li>The library provides implicit type classes for basic types like <code>Int</code>, <code>Double</code>, <code>String</code>, <code>List[T]</code>,
 <code>Map[String, T]</code> out of the box</li>
 <li>The library provides utilities to make it trivial to derive type classes for case classes</li>
