@@ -1,0 +1,253 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,exceptions,basics"/>
+    <meta name="description" content="Dealing with errors is an essential part of any application&#39;s design, and a key thing to consider while building software. Here we cover some best practices for how to deal with something going wrong, and how to design, propagate and catch exceptions specifically."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:title" content="Exception handling in Scala | Blog | Scalable Solutions">
+    <meta property="og:type" content="article">
+    <meta property="og:image" content="https://www.scalable-solutions.co.uk/img/blog/scala-exception-handling-preview.jpg">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/scala-exception-handling.html">
+
+    <meta property="og:site_name" content="Scalable Solutions">
+    <meta property="og:description" content="Dealing with errors is an essential part of any application&#39;s design, and a key thing to consider while building software. Here we cover some best practices for how to deal with something going wrong, and how to design, propagate and catch exceptions specifically.">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+
+    
+      
+      <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="1d412dda-32f4-4f69-81d2-1e42e89398ee" data-blockingmode="auto" type="text/javascript"></script>
+
+      
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-VGZYW1XZV5"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          wait_for_update: 500
+        });
+        gtag('js', new Date());
+        gtag('config', 'G-VGZYW1XZV5', {anonymize_ip: true});
+      </script>
+
+    
+
+    <title>Exception handling in Scala | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">Exception handling in Scala</h1>
+    <p>Regardless of language used, when we write software, it&#39;s always with the understanding that at some point,
+something will go wrong. When things go wrong, we have a few choices of how to deal with them. If we fail
+to deal with them, the default behaviour tends to be drastic – services going down or ceasing normal
+function, lack of transparency of what went wrong and why, perhaps some confusing log messages or no logging
+at all.</p>
+<p>It&#39;s important, then, to consider your error cases when designing the software. If a database operation
+fails, do we need to retry? What if the failure is persistent? Is it okay to drop a message if we failed
+to process it, or do we need to be resilient about eventually passing it on? How do we need to communicate
+a failure? In the worst case scenarios, does it make most sense to shut down the entire application
+rather than continue to operate in an unpredictable way?</p>
+<p>At the lowest level, though, we need to consider how to handle the exceptions themselves in a way that
+makes acting on those decisions easy. Today we&#39;ll discuss best practices for propagating and catching
+exceptions, and designing clear exceptions. This is the first step in answering the much broader questions
+highlighted above.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#exceptions-vs-monads">Exceptions vs monads</a></li>
+<li><a href="#clear-definitions">Clear definitions</a></li>
+<li><a href="#the-correct-stack-depth">The correct stack depth</a></li>
+<li><a href="#nesting-exceptions">Nesting exceptions</a></li>
+<li><a href="#tldr">tl;dr</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="exceptions-vs-monads">Exceptions vs monads</h1>
+<p>Firstly, I&#39;d like to touch upon the use of exceptions in Scala, compared to using monads to report error
+behaviour in a more functional way. Exceptions happen as a side effect in the JVM, and therefore are not
+functional: throwing an exception prevents us obtaining the type we were promised, and instead we have to
+deal with the possibile exception separately.</p>
+<p>When designing our own APIs, it&#39;s often a judgement call whether to report errors using a monad, such as an
+<code>Either[SomeError, Result]</code> or to throw exceptions. While using a monad is more functional, building up
+layers can become difficult to deal with as the stack depth increases. We may need to deal with multiple
+layers of possible error and flattening those down as we go, and we may end up reaching for a functional
+frameworks such as typelevel cats to deal with these in a purely functional way. These problems can result in
+confusion and additional complexity, along with a new dependency on opinionated functional frameworks.</p>
+<p>Where you draw the line is highly subjective, and a major point of contention in Scala — so I&#39;ll just state
+here that I try to be as pragmatic as possible: allow exceptions to propagate for exceptional cases, such as
+database failures and network failures. In cases where we&#39;ve processed some data and the result is some kind
+of permanent failure, I might be more inclined to define a strong type or use <code>Either</code> to reflect this
+result. In all cases I avoid letting it result in a degree of complexity which makes it difficult to reason
+about or require an additional framework.</p>
+<p>What&#39;s inescapable is that at some point you will have to deal with exceptions in some form:</p>
+<ul>
+<li>Java APIs and many Scala APIs will throw exceptions</li>
+<li><code>Future</code> and <code>Try</code> both encapsulate an exception, albeit wrapping it in a monad</li>
+<li>At the top level you&#39;ll have to acknowledge that an exception may bubble up from somewhere</li>
+</ul>
+<p>With that in mind, we&#39;ll focus on dealing with and defining clear exceptions. However, a lot of what&#39;s
+covered in this article will be relevant even if you eliminate exceptions early and prefer encapsulating
+your own errors in monads instead.</p>
+<h1 id="clear-definitions">Clear definitions</h1>
+<p>An important aspect of reporting errors, whether using exceptions or not, is to make them very clear and
+specific — to both machines and humans. Often, this means defining your own exception type and throwing it:</p>
+<pre><code class="language-scala">class EntryNotFoundException(id: String) extends RuntimeException(s&quot;No such entry: $id&quot;)
+</code></pre>
+<p>This provides us with a clear type, allowing our eventual error-handling code to identify it and deal with
+it logically. It also provides some extra information at that stage: we know the problematic ID as well. By
+providing a readable error message, we also make it clear to humans, so that if this exception appears in
+logs, we&#39;ll know exactly what happened, especially when combined with the stack trace.</p>
+<p>An approach I see too often looks like this instead:</p>
+<pre><code class="language-scala">throw new Exception(s&quot;No such entrry: $id&quot;)
+</code></pre>
+<p>We&#39;ve at least provided an error message, so we can read it ok in the logs — though we may have to broaden
+our search of where the error originated since we have a very generic type. However, when this propagates
+several layers up the stack, we have no way of distinguishing a failure to look up our ID from, say, a
+network error or a divide by zero. We certainly can&#39;t report on which ID failed anymore, either.</p>
+<p>Let&#39;s also consider how we test our error cases:</p>
+<pre><code class="language-scala">// With a well-defined exception, we know we&#39;ve failed for the right reason: our bad ID ws not found
+val err = the[EntryNotFoundException] thrownBy myCode()
+err.id shouldBe expectedId
+
+// Lacking that, the best we can do is match on a human-readable message
+val err = the[Exception] thrownBy myCode()
+err.message shouldBe s&quot;No such entrry: $id&quot;
+</code></pre>
+<p>This is a far weaker test, and worse, overly sensitive: it will fail if someone later decides to fix the
+typo in the word &quot;entry&quot;.</p>
+<h1 id="the-correct-stack-depth">The correct stack depth</h1>
+<p>One decision to make when dealing with exceptions is to decide what is the correct depth at which to
+eliminate them. A common mistake is to eliminate, or even avoid, exceptions too soon:</p>
+<pre><code class="language-scala">def supplementaryData(id: String): Option[SupplementaryData] = {
+  cache.get(id) orElse {
+    logger.error(s&quot;Failed to fetch $id from the cache&quot;)
+    None
+  }
+}
+</code></pre>
+<p>Here we&#39;ve logged a message about the cache miss, so we do see some info in the logs. We return an <code>Option</code>,
+so the caller can at least decide to report that lack of data as it sees fit.</p>
+<p>However:</p>
+<ul>
+<li>From a human point of view, we&#39;ve reported a message and an ID into the logs but we have no stack trace,
+so we only know that we were querying the cache. We have no way of knowing <em>why</em> we were querying the
+cache, in a scenario where several different processes may need to access this data, and can only guess
+whether this resulted in a dropped message, an incomplete database entry, an HTTP 500 back to a user.</li>
+<li>From an error handling point of view, the upstream can see we didn&#39;t get the data, but has no idea why. If
+we had propagated an exception, or provided an <code>Either[Err, SupplementaryData]</code> with a more specific
+reason, we have greater power to act on what went wrong.</li>
+</ul>
+<p>To preserve some of this information to the caller, we could change our function a bit:</p>
+<pre><code class="language-scala">def supplementaryData(id: String): SupplementaryData = {
+  cache.get(id) getOrElse {
+    throw new CacheMissException(id)
+  }
+}
+
+// in this case we&#39;ve decided to deal with the a cache miss by simply
+// leaving the extra data off a result:
+def get(id: String): Record = {
+  val supplement: Option[SupplementaryData] = try {
+    Some(supplementaryData(id))
+  } catch {
+    case e: CacheException =&gt;
+      logger.error(s&quot;Error while fetching supplementary data for $id, omitting data&quot;, e)
+      None
+  }
+
+  Record(id, basicData(id), supplement)
+}
+</code></pre>
+<p>This can be quite subjective, as catching it at a low level may be fine while only one process is performing
+this cache lookup, and you may also consider dealing with any errors through retries and cache refills part
+of the API of your cache class. In that scenario, reporting simply that we had a cache miss, and adding info
+about what we were doing at the time, can solve the problem. The cache would log some more internal
+information as needed, though we still lose the ability to relate the two events. There&#39;s no clear-cut answer
+here, however; the correct depth at which to deal with errors may vary case to case.</p>
+<p>This makes it important to consider, early on, how you intend to deal with these exceptions, how much
+information you&#39;ll need to preserve, and what you&#39;ll be seeing in the logs (or reported to your dashboard as
+metrics). This will inform where error handling should happen.</p>
+<h1 id="nesting-exceptions">Nesting exceptions</h1>
+<p>A neat feature of exceptions is that you can nest them by providing one exception as a cause to another,
+which will provide you with a stack trace detailing each exception:</p>
+<pre><code class="language-scala">class LookupException(id: String, cause: Throwable)
+  extends RuntimeException(s&quot;Failed lookup for id $id&quot;, cause)
+
+try {
+  cache.supplementaryData(id)
+} catch {
+  case e: CacheException =&gt;
+    throw new LookupException(id, e)
+}
+</code></pre>
+<p>If we take this approach, we can see that we got a cache miss which resulted in a lookup failure being
+thrown, and whatever ws performing that lookup can add further information. Our log might look like:</p>
+<pre><code class="language-plaintext">Failed to serve request to lookup for id 1234, responding with 500
+com.example.LookupException: Failed lookup for id 1234
+      at ...
+Caused by: com.example.CacheMissException: Failed to fetch id 1234 from the cache
+      at ...
+</code></pre>
+<h1 id="tldr">tl;dr</h1>
+<p>To summarise:</p>
+<ul>
+<li>Keep in mind the big picture of how different errors will be handled by your application as you write
+your code. Use that to inform how and where you&#39;ll handle them</li>
+<li>Consider both what the logs will look like, and how much information is needed to correctly handle
+problems</li>
+<li>Make sure you provide clear, specific error types and clear messaging</li>
+<li>Keep in mind how testing will work when defining your exceptions</li>
+</ul>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>

@@ -504,6 +504,9 @@ h1.section-title {
 .blog-posts-item .preview-link {
   padding: 0;
 }
+.blog-posts-item img.thumbnail {
+  aspect-ratio: 2/1;
+}
 @media (max-width: 1000px) {
   .blog-posts-item {
     margin: auto;
