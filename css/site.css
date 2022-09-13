@@ -547,3 +547,11 @@ h1.section-title {
   line-height: 1.2em;
   padding: 20px 40px;
 }
+.blog-post .diagram {
+  background: white;
+  margin: 30px 0;
+  overflow-x: auto;
+  padding: 30px 0;
+  text-align: center;
+  width: 100%;
+}

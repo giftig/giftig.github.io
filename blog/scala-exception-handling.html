@@ -106,7 +106,7 @@ deal with the possibile exception separately.</p>
 <code>Either[SomeError, Result]</code> or to throw exceptions. While using a monad is more functional, building up
 layers can become difficult to deal with as the stack depth increases. We may need to deal with multiple
 layers of possible error and flattening those down as we go, and we may end up reaching for a functional
-frameworks such as typelevel cats to deal with these in a purely functional way. These problems can result in
+framework such as typelevel cats to deal with these in a purely functional way. These problems can result in
 confusion and additional complexity, along with a new dependency on opinionated functional frameworks.</p>
 <p>Where you draw the line is highly subjective, and a major point of contention in Scala — so I&#39;ll just state
 here that I try to be as pragmatic as possible: allow exceptions to propagate for exceptional cases, such as

@@ -1,0 +1,277 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,akka,actors,architecture,multiplayer-games,advanced"/>
+    <meta name="description" content="One of the hardest but most fundamental jobs of a developer is to approach a large, complex problem and break it down into smaller, self-contained, simpler components. Akka helps you do this by letting you define nicely-encapsulated, independent actors, allowing you to describe your functionality with a messaging API and store some internal state as needed.,In part one of a series on this project, today we&#39;ll take a look at the top-level architectural design of a multiplayer games backend serving several different games on the web."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:title" content="Akka actors case study: a multiplayer games backend | Blog | Scalable Solutions">
+    <meta property="og:type" content="article">
+    <meta property="og:image" content="https://www.scalable-solutions.co.uk/img/blog/akka-multiplayer-games-architecture-preview.jpg">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/akka-multiplayer-games-architecture.html">
+
+    <meta property="og:site_name" content="Scalable Solutions">
+    <meta property="og:description" content="One of the hardest but most fundamental jobs of a developer is to approach a large, complex problem and break it down into smaller, self-contained, simpler components. Akka helps you do this by letting you define nicely-encapsulated, independent actors, allowing you to describe your functionality with a messaging API and store some internal state as needed.,In part one of a series on this project, today we&#39;ll take a look at the top-level architectural design of a multiplayer games backend serving several different games on the web.">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+
+    
+      
+      <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="1d412dda-32f4-4f69-81d2-1e42e89398ee" data-blockingmode="auto" type="text/javascript"></script>
+
+      
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-VGZYW1XZV5"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          wait_for_update: 500
+        });
+        gtag('js', new Date());
+        gtag('config', 'G-VGZYW1XZV5', {anonymize_ip: true});
+      </script>
+
+    
+
+    <title>Akka actors case study: a multiplayer games backend | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">Akka actors case study: a multiplayer games backend</h1>
+    <p>Today I&#39;ll be sharing the high-level architecture and design features of a project I wrote back in 2018 using
+Akka actors. This is a reasonably complex project, and does a decent job of illustrating several points of
+how to build generic, reusable actors to perform useful functions.</p>
+<p>This article is the first of a series where we&#39;ll look in more depth at individual components of this design.
+In this article, we&#39;ll look at the high-level project design, how we break down a complex problem into
+simple, reusable components, and how to structure and build the solution in Akka at a high level.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#a-multiplayer-games-backend">A multiplayer games backend</a></li>
+<li><a href="#high-level-structure">High-level structure</a><ul>
+<li><a href="#the-game-daemon">The game daemon</a></li>
+<li><a href="#the-game-framework">The game framework</a></li>
+<li><a href="#the-lobby">The lobby</a></li>
+<li><a href="#the-feed">The feed</a></li>
+<li><a href="#the-game-logic">The game logic</a></li>
+<li><a href="#the-turn-controller">The turn controller</a></li>
+</ul>
+</li>
+<li><a href="#sharding">Sharding</a></li>
+<li><a href="#http-interface">HTTP interface</a></li>
+<li><a href="#take-aways">Take aways</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="a-multiplayer-games-backend">A multiplayer games backend</h1>
+<p>Firstly, the project goal. A few years ago, a major passion project involved creating multiplayer games
+which could be played on my website. I had a few of these of varying complexity, from a slightly wacky
+&quot;enhanced&quot; version of snakes and ladders, to a Yahtzee-inspired &quot;rainbow dice&quot; game, to a complicated card
+game, <a href="https://boardgamegeek.com/boardgame/215/tichu">Tichu</a>. The latest iteration of these games, around 2016-2018, involved some javascript
+frontend work hosted on my website, and a backend written in Scala with Akka actors. We&#39;ll be looking at the
+backend.</p>
+<p>The games have a fair bit of variety, but they were all online multiplayer, turn-based board or card games,
+so they all worked with a fairly similar model:</p>
+<ol>
+<li>Create a lobby to let players join</li>
+<li>Start the game with players currently participating in the lobby</li>
+<li>Decide turn order</li>
+<li>Let players make moves, in turn order, and update the game state according to the results of each move</li>
+<li>Publish player moves to all players (sometimes with private details hidden)</li>
+<li>Determine when the game was over and who won</li>
+<li>End the game, and reward the winner(s) somehow</li>
+</ol>
+<p>The details of the latter steps in particular vary greatly from game to game, but clearly there&#39;s a lot of
+common ground here even between very different games.</p>
+<p>The basic design, then, involved firstly designing some actors which could generically perform common roles,
+like defining a lobby and the logic around when it&#39;s ready for a game to start, who has permissions to start
+the game and/or invite people, and other &quot;lobby&quot; functionality. Similarly, enforcing turn order happens with
+the help of the <code>TurnController</code> which we insert in front of our game logic to &quot;guard&quot; it from out of order
+actions, duplicate actions, and races. We also need a feed of actions which are happening, both to inform
+users and to allow us to adopt an event-driven approach.</p>
+<p>Along with those pieces common to all games, we define specific actor relationships and state models for the
+specific game, and define the logic of our game: which actions can be taken, when does the turn end, what
+does our scoring and our game board look like, when is the game over?</p>
+<p>Ultimately this needs to reach the user in the frontend, so we interface our internal actors with an HTTP
+interface, providing some endpoints for checking game state and taking actions, and providing a websocket
+feed to subscribe to real time events.</p>
+<h1 id="high-level-structure">High-level structure</h1>
+<p>One excellent feature of Akka is the ability to easily draw what we&#39;re building, since we&#39;re creating actors
+which will talk to each other in much the same way as services might talk to each other. At a high level,
+we can look at how our top-level actors communicate with each other to handle setting up and tearing down
+games, and at a lower level we can zoom into child actors and see how they work as well.</p>
+<p>Let&#39;s first take a look at a simplified structure of a game:</p>
+<div class="diagram">
+  <img
+    src="/img/blog/akka-multiplayer-games-architecture-game-lobby-overview.svg"
+    alt="Game-lobby architecture diagram"
+  >
+</div>
+
+<p>In this diagram, each component is an actor or group of actors, and is fully encapsulated. They perform
+specific, reusable functions and communicate with other actors. Let&#39;s take a look at some of the components
+we need to make this work.</p>
+<h2 id="the-game-daemon">The game daemon</h2>
+<p>This is the top-level manager actor for one type of game, and deals with creating individual games and
+holding their references, and providing an interface to manage them. This is what the user will be talking to
+when creating an initial game lobby or connecting to a game by ID. It supervises all games as well,
+attempting to recover or replace any lost actors.</p>
+<p>When a game is created, it&#39;ll spin up a child <code>GameFramework</code> actor, which then handles everything to do with
+the game.</p>
+<p>Ultimately we serve an interface for multiple games, where each has a slug and a daemon actor, so that we
+can direct our queries to the <code>snakes-and-ladders</code> daemon or the <code>four-in-a-row</code> daemon as appropriate.</p>
+<h2 id="the-game-framework">The game framework</h2>
+<p>This is the parent actor encapsulating everything needed for one instance of a game, throughout the
+lifecycle. It spins up children for all of the components you see beneath it in the diagram. This is a
+generic component, as every type of game needs a feed, a lobby, and an actor to deal with the game logic;
+we&#39;ll swap out that last piece per game. This actor will perform all the high-level housekeeping functions
+for any type of game.</p>
+<p>The framework understands the lobby and game lifecycle, stores game participants, controls how the feed is
+hooked up to other components during the lifecycle, and acts as the parent to every other component. This
+means it&#39;ll supervise everything beneath it and handle tasks like ensuring games are torn down if left idle.</p>
+<p>The framework is created when the user requests to start a new game by talking to the game daemon, ultimately
+by making an HTTP POST request like <code>/game-type/create</code> and receiving back an ID to interact with the
+instance. It sets up the initial components and hooks up the lobby to the feed. Once the lobby completes and
+the game start is requested, it ensures the game itself is initialised and allows the game to take over
+control of user interaction instead.</p>
+<h2 id="the-lobby">The lobby</h2>
+<p>The lobby is the initial &quot;room&quot; before the game starts, where we start collecting participants and get
+ready to launch the game. It provides several few pieces of functionality:</p>
+<ul>
+<li>Allow users to join and leave</li>
+<li>Limit the number of users who can be in the lobby</li>
+<li>Provide invite / kick / ban functionality to authorised users</li>
+<li>Respect minimum / maximum participant limits</li>
+<li>Tell the feed about join / leave events, or that the lobby is complete and the game is starting</li>
+<li>Send a summary of the final lobby state to the <code>GameFramework</code> parent when it completes, and kill itself</li>
+</ul>
+<p>The lobby lifecycle begins when the parent <code>GameFramework</code> begins, and ends when the game is set to begin;
+the lobby yields a set of users who will be playing, and the game will be initialised with those users.</p>
+<h2 id="the-feed">The feed</h2>
+<p>The feed primarily exists as a broadcast mechanism, allowing subscribers to register when a user connects
+via websocket. It also assists in adopting an event-driven approach to our game logic, so that in event of
+failure, we can recover the game state by replaying the feed into the game. There are a few considerations
+here:</p>
+<ul>
+<li>a user may join late or need to refresh and reconnect, so we need to be able to flexibly receive the
+feed from the beginning, from the end, or from a particularly ID the user last saw.</li>
+<li>events may need to be masked before sending out to users; e.g. when a user draws a card from the deck,
+the feed should not tell everyone what card was drawn</li>
+<li>as for the events themselves, they should always at least have an ID, an idea of what is public vs
+private data to mask, and to aid in processing messages in the frontend, an idea of what event &quot;caused&quot;
+the next one. Several events are also common across all games, for example <code>GameStarted</code>.</li>
+</ul>
+<p>This means we have a few pieces of logic to make our feed really useful, as well as needing a solid <code>Event</code>
+model which games can extend, or draw from a pool of common definitions.</p>
+<h2 id="the-game-logic">The game logic</h2>
+<p>The game component will itself be an actor, and encodes all the logic of the game. For a simple game like
+Snakes and Ladders, this may be a single actor which holds all the game state and responds to a couple of
+potential actions to advance the game. For a complex card game like Tichu, there may be multiple phases to
+a round, player hands and scores to track, and therefore it will spin up and shut down various groups of
+child actors to deal with the internals. In most cases it will place itself behind a <code>TurnController</code> to
+avoid having to worry about whose turn it is, so this behaviour is provided as standard.</p>
+<h2 id="the-turn-controller">The turn controller</h2>
+<p>This component encapsulates the common logic of guarding the game from out-of-order actions and deciding
+whose turn it is, and is used by any turn-based game. It has the following behaviours:</p>
+<ul>
+<li>it will intercept all actions and pass them through if and only if the action was taken by the user who
+currently has a turn</li>
+<li>it will deal with race conditions by locking itself once an action is passed on, and only unlocking
+itself once the game logic confirms the next action to take: advance the turn, jump to a new turn, or
+unlock and continue the same turn. While locked, no actions will be permitted at all, so we require
+an acknowledgement before continuing.</li>
+<li>it is given a set of participants and will decide the initial turn order</li>
+<li>it can be told when the turn should be advanced, and if the game requires it, jump to a specific user</li>
+<li>players can be marked as out of the game to remove them from the current turn order</li>
+</ul>
+<p>This effectively makes the <code>TurnController</code> a proxy which both decides and enforces turn order, and can be
+configured by the game to customise its behaviour when needed. The actor is inserted between the interface
+and the game and this prevents the game having to worry about turn order or races.</p>
+<h1 id="sharding">Sharding</h1>
+<p>Since these multiplayer games have finite player limits, the service can be scaled up with only very limited
+exposure to the drawbacks of distributed computing. We can pick a sharding strategy which distributes
+our individual <code>GameFramework</code> actor groups across our nodes, meaning that everything internal to the game
+will always take place on a single node, and we don&#39;t risk dropping regular messages during the course of
+the game.</p>
+<p>This means that only the top level <code>GameDaemon</code> will need to send messages between nodes of the application,
+so message delivery failures will happen early: only a game creation or an attempt to connect to a feed can
+fail, and both can be retried safely. <a href="https://doc.akka.io/docs/akka/current/typed/cluster.html">Akka cluster</a> provides the functionality we need to
+send messages to actors on different nodes, but it does unavoidably have weaker message delivery guarantees
+than those passed between two different actors in the same JVM.</p>
+<h1 id="http-interface">HTTP interface</h1>
+<p>The heavily-structured nature of the actor hierarchy corresponds nicely to a RESTful API with structured
+URLs. Without going into too much detail, a progressive structure like
+<code>game/snakes-and-ladders/12345/action/roll/</code> descends the logical actor hierarchy to deliver actions to a
+specific game. This makes the route structure fairly transparently reflect the actor system structure and
+aids in understanding and debugging. Since players also need realtime updates on what&#39;s going on in the game,
+users subscribe to a websocket feed like <code>game/snakes-and-ladders/12345/feed</code> to receive continuous updates
+on what&#39;s going on.</p>
+<p>This interface is served via akka http, and after performing authentication and parsing and validating any
+JSON actions delivered, communicates with the underlying actor system to deliver the message.</p>
+<h1 id="take-aways">Take aways</h1>
+<p>A lot of what I&#39;ve discussed here is a highly-specific use case for akka actors, but hopefully some of the
+designs here can be used as inspiration for other challenging projects. Here are some takeaways for designing
+your own actor systems:</p>
+<ul>
+<li>Building an actor system makes it easy to draw and reason about the inner workings of the application, and
+in turn helps you break down a large, complex problem into a series of smaller building blocks</li>
+<li>You can stay DRY in an actor system by encapsulating shared functionality into an actor or hierarchy of
+actors which provide a key service to others</li>
+<li>High-level architectural design is crucial to breaking down a difficult problem</li>
+<li>Remember that sending messages across network boundaries with Akka Cluster comes with performance and
+reliability costs, so effectively sharding an application to minimise those boundaries is worthwhile</li>
+</ul>
+<p>In future articles, I&#39;ll dive into several individual components in more depth to see exactly how we
+build and test actors with the behaviours described here.</p>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>
