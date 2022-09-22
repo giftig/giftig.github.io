@@ -101,7 +101,7 @@ highlighted above.</p>
 <p>Firstly, I&#39;d like to touch upon the use of exceptions in Scala, compared to using monads to report error
 behaviour in a more functional way. Exceptions happen as a side effect in the JVM, and therefore are not
 functional: throwing an exception prevents us obtaining the type we were promised, and instead we have to
-deal with the possibile exception separately.</p>
+deal with the possible exception separately.</p>
 <p>When designing our own APIs, it&#39;s often a judgement call whether to report errors using a monad, such as an
 <code>Either[SomeError, Result]</code> or to throw exceptions. While using a monad is more functional, building up
 layers can become difficult to deal with as the stack depth increases. We may need to deal with multiple
