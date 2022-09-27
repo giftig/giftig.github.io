@@ -1,0 +1,260 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="scala,architecture,tooling,high-level"/>
+    <meta name="description" content="Like any language, Scala has pros and cons, making it a great choice for jobs at which it really excels. In this article, we discuss jobs for which Scala is particularly suited and some alternatives for jobs where Scala may be the wrong tool. We also take a look at the idea of language purity and how being able to use the right tool for the job, rather than force Scala to do every job, makes for a more versatile developer."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:title" content="When is scala the right tool for the job? | Blog | Scalable Solutions">
+    <meta property="og:type" content="article">
+    <meta property="og:image" content="https://www.scalable-solutions.co.uk/img/blog/scala-right-tool-for-job-preview.jpg">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/scala-right-tool-for-job.html">
+
+    <meta property="og:site_name" content="Scalable Solutions">
+    <meta property="og:description" content="Like any language, Scala has pros and cons, making it a great choice for jobs at which it really excels. In this article, we discuss jobs for which Scala is particularly suited and some alternatives for jobs where Scala may be the wrong tool. We also take a look at the idea of language purity and how being able to use the right tool for the job, rather than force Scala to do every job, makes for a more versatile developer.">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+
+    
+      
+      <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="1d412dda-32f4-4f69-81d2-1e42e89398ee" data-blockingmode="auto" type="text/javascript"></script>
+
+      
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-VGZYW1XZV5"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          wait_for_update: 500
+        });
+        gtag('js', new Date());
+        gtag('config', 'G-VGZYW1XZV5', {anonymize_ip: true});
+      </script>
+
+    
+
+    <title>When is scala the right tool for the job? | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">When is scala the right tool for the job?</h1>
+    <p>Scala is an excellent choice for building highly scalable, low-latency, multithreaded applications. It has
+strong typing, a concise syntax, and a highly functional design. It&#39;s especially good for building
+long-running services, and at solving problems with strongly-defined data structures and a lot of
+concurrency. With the addition of tooling like <a href="https://akka.io/docs/">Akka</a> or <a href="https://zio.dev/version-1.x/datatypes/stream/">ZIO</a>, it also becomes an
+especially good choice for streaming applications, event-driven applications, and more.</p>
+<p>There are plenty of times when Scala is not the right tool for the job, however, and in this article we&#39;ll
+discuss some of the best use cases for Scala, along with some poor ones. We&#39;ll also look at some of the
+dangers of &quot;language purity&quot; and how picking the right tool for the job, and adding more skills to your
+skillset, can make a more effective developer.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#pros-and-cons-of-scala">Pros and cons of Scala</a><ul>
+<li><a href="#pros">Pros</a></li>
+<li><a href="#cons">Cons</a></li>
+</ul>
+</li>
+<li><a href="#considerations-and-use-cases">Considerations and use cases</a><ul>
+<li><a href="#high-concurrency">High concurrency</a></li>
+<li><a href="#data-variability">Data variability</a></li>
+<li><a href="#project-size">Project size</a></li>
+<li><a href="#scripting">Scripting</a></li>
+</ul>
+</li>
+<li><a href="#tldr">tl;dr</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="pros-and-cons-of-scala">Pros and cons of Scala</h1>
+<p>So let&#39;s take a look at some of the strengths and weaknesses of Scala. These are not exhaustive, but
+stand out as some of the most fundamental aspects of the language.</p>
+<h2 id="pros">Pros</h2>
+<ul>
+<li><p><strong>Strong compile-time guarantees:</strong> Scala is statically typed, functional by design, and has a compiler
+which does an excellent job of catching problems early on. It has a good balance of concise syntax and
+strong compile-time guarantees, provided you write idiomatic Scala.</p>
+</li>
+<li><p><strong>Excellent concurrency handling:</strong> Scala is fast and multi-threaded, and uses functional paradigms to
+deal with concurrency safely in a non-blocking manner and to avoid race conditions. Out of the box the
+Futures API helps handle non-blocking concurrency, and the language is geared towards functional handling
+of data, e.g. using case classes which are copied instead of modified in place, preventing races to update
+data in memory. Popular libraries provide even more advanced concurrency management.</p>
+</li>
+<li><p><strong>Runs on the JVM:</strong> the JVM is a very stable virtual machine, with garbage collection and various other
+features (too many to tackle here) provided out of the box. You also have guaranteed long-term support.</p>
+</li>
+<li><p><strong>Fast</strong>: while not quite the blistering speed you can achieve with low-level languages like C or Go, and
+trading some runtime optimisation for the guarantees of a functional design, Scala runs fast. It&#39;s a great
+deal faster than an interpreted language like Python or Javascript, and has comparable performance to Java,
+C#, Go, or others. In most applications, speed is unlikely to be the bottleneck.</p>
+</li>
+<li><p><strong>Java interoperability:</strong> There are a great many Java libraries available and you can use them freely in
+Scala even if a Scala version doesn&#39;t exist. This also means if you have in-house Java you can make use of
+any internal Java libraries you&#39;ve already developed.</p>
+</li>
+</ul>
+<h2 id="cons">Cons</h2>
+<ul>
+<li><p><strong>Steep learning curve</strong>: Scala is a difficult language to learn, and even more difficult to master.
+Experienced scala developers are expensive and hard to find, and training new scala developers can be
+time consuming.</p>
+</li>
+<li><p><strong>Minimum overhead for a project</strong>: the smallest possible project will typically still require a
+<code>build.sbt</code>, some plugins like <code>sbt-assembly</code>, and some dependencies and configuration such as logging.
+To run the application you&#39;ll need to use something like <code>java -jar myapp.jar [arguments]</code>. An
+interpreted language like python, javascript, bash, etc. could be a single file with no build process and
+a simpler cli invocation.</p>
+</li>
+<li><p><strong>Slower to develop</strong>: compilation, static types, and functional design are all features which give you
+greater confidence in the reliability of your application, but the trade-off is that a simpler, dynamic,
+interpreted language like python or javascript is usually faster to write, particularly for small
+applications or prototyping.</p>
+</li>
+<li><p><strong>Runs on the JVM:</strong> the JVM has a certain unavoidable start-up time and memory usage cost. This makes it
+a poor choice for CLI tools where you might need to invoke the application quickly and/or frequently. It
+may also require you to carefully consider how you manage the JVM in a microservices architecture.</p>
+</li>
+</ul>
+<p>Many attempts have been made to partially mitigate some of these negatives of Scala, with varying degrees of
+success. <a href="http://www.foundweekends.org/giter8/">Giter8 templates</a> can be used to quickstart a project, or IDE can do some of the
+lifting for you. <a href="https://ammonite.io/">Ammonite</a> attempts to allow simple scripting in Scala to be more viable
+by allowing single-file <code>.sc</code> scripts to be run; under the hood, it builds and caches the result, including
+an additional syntax for declaring dependencies inline. What it does even better, is provide an excellent
+REPL interface for experiementing with Scala. While I would avoid using Scala as a scripting language, I do
+recommend the Ammonite REPL for quick experimentation. <a href="https://www.graalvm.org/">GraalVM</a> is an alternative to the JVM
+which has much faster start up time. <a href="https://www.scala-js.org/">ScalaJS</a> compiles Scala into javascript, making it
+possible to write Scala which will run in a web browser. Each of these solutions have their own downsides,
+however, and can&#39;t make Scala the equal of languages or tooling better suited to these kinds of problems.</p>
+<h1 id="considerations-and-use-cases">Considerations and use cases</h1>
+<p>With the pros and cons in mind, let&#39;s consider some factors which might inform whether Scala is the right
+choice for your application.</p>
+<h2 id="high-concurrency">High concurrency</h2>
+<p>Scala really shines in its safe and fast handling of concurrency using functional principles. If you&#39;re
+writing a low-latency, highly concurrent application, Scala is an excellent choice. For basic application
+designs, you can use the Futures API to handle concurrency. For larger or more complex designs, you can
+consider whether your application would fit well with an actor system model and consider <a href="https://akka.io/docs/">Akka</a>,
+or whether data streaming fits your use case and consider <a href="https://doc.akka.io/docs/akka/current/stream/index.html">Akka stream</a> or
+<a href="https://zio.dev/version-1.x/datatypes/stream/">ZIO Streaming</a> designs. These libraries can make designing a concurrent application much easier
+from a top level down, as I discussed recently in a <a href="akka-multiplayer-games-architecture.html">case study of using Akka actors</a>.</p>
+<p>If you don&#39;t need high concurrency, you may not be making full use of the advantages of Scala, and
+considering other tooling may be worthwhile. This may also mean that the most complex or highly concurrent
+pieces of your architecture should be written in Scala, particularly with tooling such as Akka, but other
+components could benefit from the advantages of a more basic design in another language. For example, it&#39;s
+common to see Scala backend services supported by a Python or NodeJS middle-tier layer in web applications.</p>
+<h2 id="data-variability">Data variability</h2>
+<p>Scala is <a href="modelling-json-scala.html">great at modelling data</a> by providing strong types and case classes to the
+shape of your data. This gives you a lot of compile time guarantees about how you&#39;re using the data, and is
+great if you know the shape of the data at compile time. This doesn&#39;t mean the data has to have a small
+number of fixed shapes, though; Scala is also good at
+<a href="modelling-json-scala.html#stronger-types">modelling optional and multi-shaped data</a>.</p>
+<p>If your data is highly variable, specifically if you only know the schema to which it conforms at runtime,
+Scala may not be the best choice. While it&#39;s always possible to interpret your schema at runtime using
+libraries, if this is the primary purpose of your application, a dynamically-typed language is likely a
+better fit.</p>
+<h2 id="project-size">Project size</h2>
+<p>While Scala is appropriate for almost any size of project, it&#39;s worth considering the minimum start up cost
+in terms of initial setup for development and the speed at which development can take place. As Scala aims to
+provide strong compile-time guarantees and a large degree of runtime safety, it means a well-written and
+well-tested project can scale up to any size with little to no loss of confidence. The trade off for that
+confidence is that it typically takes longer to develop than a similar application in dynamic language.</p>
+<p>Similarly, Scala has a lot of useful tools, but many of them aren&#39;t part of the standard library and require
+dependencies, and decisions to be made early on – for example, the large number of possible JSON libraries
+in Scala, and the range of different toolkits you might consider using.</p>
+<p>So, consider where your application lies on the &quot;build it fast&quot; vs &quot;guaranteed uptime&quot; when choosing whether
+Scala fits. To quickly create prototypes or proof of concepts, you might instead reach for a dynamic,
+language like python. It may later be appropriate to take the slower but more solid approach of replacing it
+with a Scala service – with better concurrency handling, better scaling, and better type safety.</p>
+<h2 id="scripting">Scripting</h2>
+<p>I&#39;m including this section as a focus on day-to-day DevOps / development work, as I&#39;ve found it common for
+Scala developers especially to have a certain tunnel vision or language purity with Scala. I&#39;ve seen this
+result in developers either attempting to automate development tasks using Scala and doing so slowly and/or
+poorly, or giving up and doing a menial task repeatedly because they can&#39;t figure out how to elegantly
+automate the task in Scala. Generally, this degree language of language purity is counter-productive.</p>
+<p>I&#39;m a strong advocate of learning new skills and using the right tool for the job. While my specialty is
+Scala, it&#39;s important to be able to use one or two other languages to cover the gaps in which Scala does a
+poor job, especially since scripting simple tasks to speed up development is something any developer needs,
+and something Scala does poorly.</p>
+<p>For me, that means having a good grasp of Bash and Python alongside my expertise with Scala. While Bash is
+often feared as being old, clunky and arcane, simple grasp of the terminal is vital for any developer, and
+being able to take that one step further and automate simple tasks, especially related to working with files
+or making simple HTTP calls with <code>curl</code>, can make your life easier even without requiring more than basic
+understanding of Bash. For slightly more complex scripts, perhaps working with pieces of JSON, making more
+complex HTTP calls, or using one of many libraries, good grasp of a scripting language is important. I choose
+python due to its simple and concise syntax and <a href="https://xkcd.com/353/">famously broad and easy toolkit</a>, but Perl,
+JavaScript, and others can fill the same role.</p>
+<p>To provide some extreme examples, this once led to me rewriting a 700-line overly complicated Scala &quot;script&quot;
+which had been incorporated into a unit test file but prevented from running as a test, instead requiring you
+to uncomment some lines of code, replace URL and data payload variables, and run from a specific line from
+inside an IDE, with the result of writing some data over TCP to a backend service. Using python, this became
+a 15-line script which could accept an arbitrary JSON payload and command line parameters like
+<code>write-payload --host example.com -f /tmp/data.json</code> and be used across several different projects.</p>
+<p>Similarly, a standard part of the testing procedure in another project involved using a GUI application to
+manually perform a series of 10 steps, taking approximately 10 minutes multiple times a day, because it was
+non-trivial to automate. A couple of hours of writing python and the whole team could eliminate that process
+entirely going forward.</p>
+<p>In short: a good developer needs some working knowledge of DevOps, and at least some proficiency in scripting
+to perform such tasks. To avoid beating a dead horse, I leave you now with my
+<a href="https://github.com/giftig/misc-scripts">public collection of useful scripts</a> as inspiration for the types of jobs worth automating.</p>
+<h1 id="tldr">tl;dr</h1>
+<p>In summary:</p>
+<ul>
+<li>Scala is excellent for low latency, high concurrency applications and gives you strong compiler guarantees,
+at the cost of being difficult to learn and slower to develop than some other languages</li>
+<li>Not every application is a good use case for Scala, so consider early whether the trade off is a good one
+for your scenario</li>
+<li>Don&#39;t use a hammer for every job – some jobs are worth learning a new language for rather than trying to
+do with Scala, especially scripting and CLI tooling</li>
+</ul>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>
