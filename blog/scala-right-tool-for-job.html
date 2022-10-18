@@ -151,11 +151,11 @@ may also require you to carefully consider how you manage the JVM in a microserv
 </li>
 </ul>
 <p>Many attempts have been made to partially mitigate some of these negatives of Scala, with varying degrees of
-success. <a href="http://www.foundweekends.org/giter8/">Giter8 templates</a> can be used to quickstart a project, or IDE can do some of the
+success. <a href="http://www.foundweekends.org/giter8/">Giter8 templates</a> can be used to quickstart a project, or an IDE can do some of the
 lifting for you. <a href="https://ammonite.io/">Ammonite</a> attempts to allow simple scripting in Scala to be more viable
 by allowing single-file <code>.sc</code> scripts to be run; under the hood, it builds and caches the result, including
 an additional syntax for declaring dependencies inline. What it does even better, is provide an excellent
-REPL interface for experiementing with Scala. While I would avoid using Scala as a scripting language, I do
+REPL interface for experimenting with Scala. While I would avoid using Scala as a scripting language, I do
 recommend the Ammonite REPL for quick experimentation. <a href="https://www.graalvm.org/">GraalVM</a> is an alternative to the JVM
 which has much faster start up time. <a href="https://www.scala-js.org/">ScalaJS</a> compiles Scala into javascript, making it
 possible to write Scala which will run in a web browser. Each of these solutions have their own downsides,
@@ -177,11 +177,11 @@ pieces of your architecture should be written in Scala, particularly with toolin
 components could benefit from the advantages of a more basic design in another language. For example, it&#39;s
 common to see Scala backend services supported by a Python or NodeJS middle-tier layer in web applications.</p>
 <h2 id="data-variability">Data variability</h2>
-<p>Scala is <a href="modelling-json-scala.html">great at modelling data</a> by providing strong types and case classes to the
-shape of your data. This gives you a lot of compile time guarantees about how you&#39;re using the data, and is
-great if you know the shape of the data at compile time. This doesn&#39;t mean the data has to have a small
+<p>Scala is <a href="modelling-json-scala.html">great at modelling data</a> by providing strong types and case classes to fit
+the shape of your data. This gives you a lot of compile time guarantees about how you&#39;re using the data, and
+is great if you know the shape of the data at compile time. This doesn&#39;t mean the data has to have a small
 number of fixed shapes, though; Scala is also good at
-<a href="modelling-json-scala.html#stronger-types">modelling optional and multi-shaped data</a>.</p>
+<a href="modelling-json-scala.html#stronger-types">modelling optional and multi-shaped data</a> and other complexities.</p>
 <p>If your data is highly variable, specifically if you only know the schema to which it conforms at runtime,
 Scala may not be the best choice. While it&#39;s always possible to interpret your schema at runtime using
 libraries, if this is the primary purpose of your application, a dynamically-typed language is likely a
@@ -195,8 +195,8 @@ confidence is that it typically takes longer to develop than a similar applicati
 <p>Similarly, Scala has a lot of useful tools, but many of them aren&#39;t part of the standard library and require
 dependencies, and decisions to be made early on – for example, the large number of possible JSON libraries
 in Scala, and the range of different toolkits you might consider using.</p>
-<p>So, consider where your application lies on the &quot;build it fast&quot; vs &quot;guaranteed uptime&quot; when choosing whether
-Scala fits. To quickly create prototypes or proof of concepts, you might instead reach for a dynamic,
+<p>So, consider where your application lies on the &quot;build it fast&quot; vs &quot;guaranteed uptime&quot; curve when choosing
+whether Scala fits. To quickly create prototypes or proof of concepts, you might instead reach for a dynamic,
 language like python. It may later be appropriate to take the slower but more solid approach of replacing it
 with a Scala service – with better concurrency handling, better scaling, and better type safety.</p>
 <h2 id="scripting">Scripting</h2>
@@ -209,27 +209,31 @@ automate the task in Scala. Generally, this degree language of language purity i
 Scala, it&#39;s important to be able to use one or two other languages to cover the gaps in which Scala does a
 poor job, especially since scripting simple tasks to speed up development is something any developer needs,
 and something Scala does poorly.</p>
-<p>For me, that means having a good grasp of Bash and Python alongside my expertise with Scala. While Bash is
-often feared as being old, clunky and arcane, simple grasp of the terminal is vital for any developer, and
-being able to take that one step further and automate simple tasks, especially related to working with files
-or making simple HTTP calls with <code>curl</code>, can make your life easier even without requiring more than basic
-understanding of Bash. For slightly more complex scripts, perhaps working with pieces of JSON, making more
-complex HTTP calls, or using one of many libraries, good grasp of a scripting language is important. I choose
-python due to its simple and concise syntax and <a href="https://xkcd.com/353/">famously broad and easy toolkit</a>, but Perl,
-JavaScript, and others can fill the same role.</p>
-<p>To provide some extreme examples, this once led to me rewriting a 700-line overly complicated Scala &quot;script&quot;
-which had been incorporated into a unit test file but prevented from running as a test, instead requiring you
-to uncomment some lines of code, replace URL and data payload variables, and run from a specific line from
-inside an IDE, with the result of writing some data over TCP to a backend service. Using python, this became
-a 15-line script which could accept an arbitrary JSON payload and command line parameters like
-<code>write-payload --host example.com -f /tmp/data.json</code> and be used across several different projects.</p>
+<p>For me, that means having a good grasp of Bash and Python alongside my expertise with Scala. Bash is often
+feared as being old, clunky and a bit arcane, but at least a grasp of using the terminal is vital for any
+developer. Being able to take that one step further and automate simple tasks, especially related to working
+with files or making simple HTTP calls with <code>curl</code>, can make your life easier even without requiring more
+than basic understanding of Bash. For slightly more complex scripts, perhaps working with pieces of JSON,
+making more complex HTTP calls, or using one of many libraries, good grasp of a scripting language is also
+important. I choose python due to its simple and concise syntax and
+<a href="https://xkcd.com/353/">famously broad and easy toolkit</a>, but Perl, Ruby, JavaScript, and others can fill the same
+role according to personal preference.</p>
+<p>To provide some extreme examples, this once led to me rewriting someone&#39;s 700-line overly complicated Scala
+&quot;script&quot; which had been incorporated into a unit test file but prevented from running as a test, instead
+requiring you to uncomment some lines of code, replace URL and data payload variables, and run from a
+specific line from inside an IDE, with the result of writing some arbitrary data over TCP to a backend
+service. Using python, this became a 15-line script which could accept an arbitrary JSON payload and command
+line parameters like <code>write-payload --host example.com -f /tmp/data.json</code> and be used across several
+different projects.</p>
 <p>Similarly, a standard part of the testing procedure in another project involved using a GUI application to
 manually perform a series of 10 steps, taking approximately 10 minutes multiple times a day, because it was
-non-trivial to automate. A couple of hours of writing python and the whole team could eliminate that process
+non-trivial to automate. This process was being followed by half a dozen developers and QAs. A couple of
+hours of digging into the process and writing some python, and the whole team could eliminate that process
 entirely going forward.</p>
 <p>In short: a good developer needs some working knowledge of DevOps, and at least some proficiency in scripting
 to perform such tasks. To avoid beating a dead horse, I leave you now with my
-<a href="https://github.com/giftig/misc-scripts">public collection of useful scripts</a> as inspiration for the types of jobs worth automating.</p>
+<a href="https://github.com/giftig/misc-scripts">public collection of useful scripts</a> as inspiration for some of the types of jobs I&#39;ve found
+worth automating in the past.</p>
 <h1 id="tldr">tl;dr</h1>
 <p>In summary:</p>
 <ul>
