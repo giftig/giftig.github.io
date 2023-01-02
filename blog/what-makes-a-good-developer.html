@@ -1,0 +1,288 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    
+    
+    
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="basics,soft-skills,best-practices,high-level"/>
+    <meta name="description" content="A language-agnostic look at what makes a good developer. We take a high-level view of several of the most important areas of being an effective developer, and the skills which developers at any level should strive to continually improve. This includes technical skills, such as understanding and correctly applying development best practices, and soft skills, such as collaboration and understanding business requirements."/>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#bd3b4d"/>
+
+    <meta property="og:title" content="What makes a good developer? | Blog | Scalable Solutions">
+    <meta property="og:type" content="article">
+    <meta property="og:image" content="https://www.scalable-solutions.co.uk/img/blog/what-makes-a-good-developer-preview.jpg">
+    <meta property="og:url" content="https://www.scalable-solutions.co.uk/blog/what-makes-a-good-developer.html">
+
+    <meta property="og:site_name" content="Scalable Solutions">
+    <meta property="og:description" content="A language-agnostic look at what makes a good developer. We take a high-level view of several of the most important areas of being an effective developer, and the skills which developers at any level should strive to continually improve. This includes technical skills, such as understanding and correctly applying development best practices, and soft skills, such as collaboration and understanding business requirements.">
+
+    <link rel="stylesheet" href="/css/site.css"/>
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
+
+    
+  <script src="/js/prism.js"></script>
+  <link rel="stylesheet" href="/css/prism.css"/>
+
+
+    
+      
+      <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="1d412dda-32f4-4f69-81d2-1e42e89398ee" data-blockingmode="auto" type="text/javascript"></script>
+
+      
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-VGZYW1XZV5"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          wait_for_update: 500
+        });
+        gtag('js', new Date());
+        gtag('config', 'G-VGZYW1XZV5', {anonymize_ip: true});
+      </script>
+
+    
+
+    <title>What makes a good developer? | Blog | Scalable Solutions</title>
+  </head>
+  <body>
+    <section id="page-header">
+      <div id="logo-bar">
+        <a href="/"><img class="logo" src="/img/scalable-solutions.png"/></a>
+      </div>
+
+      <section id="nav">
+        
+          <a href="/#services">Services</a>
+          <a href="/#tech">Specialties</a>
+          <a href="/#vision">Company vision</a>
+          <a href="/blog/">Blog</a>
+          <a class="get-in-touch" href="mailto:sales@scalable-solutions.co.uk">GET IN TOUCH</a>
+        
+      </section>
+    </section>
+    
+
+    
+  <section class="blog-post">
+    <h1 class="section-title">What makes a good developer?</h1>
+    <p>Today I&#39;m attempting to tackle a broad and difficult question by breaking down some of the most important skills a
+developer needs. I&#39;ve been deliberately agnostic to language, technology, and type of project here and attempt to
+highlight skills which are universal. These are qualities I look for when hiring developers, qualities I try to instil
+into and skills I try to build in developers I mentor, and qualities and skills I always trying to adhere to and
+further develop myself.</p>
+<p>What I provide here is far from a comprehensive set of skills and attitudes needed to succeed as a developer, but are
+some of the ones I find most important. A good senior developer should have almost all of these, and a good junior
+developer has all of the attitudes and is working on gaining the skills.</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#attitude">Attitude</a></li>
+<li><a href="#best-practices">Best practices</a><ul>
+<li><a href="#dont-repeat-yourself">Don&#39;t Repeat Yourself</a></li>
+<li><a href="#separation-of-concerns">Separation of concerns</a></li>
+<li><a href="#organisation-and-readability">Organisation and readability</a></li>
+<li><a href="#testability">Testability</a></li>
+<li><a href="#applying-best-practice">Applying best practice</a></li>
+</ul>
+</li>
+<li><a href="#working-with-business">Working with business</a></li>
+<li><a href="#summary">Summary</a></li>
+</ul>
+<!-- tocstop -->
+
+<hr>
+<h1 id="attitude">Attitude</h1>
+<p>I&#39;ll cover this first because in my view it&#39;s the most important factor in making a good developer, as it decides how
+well you work with a team. Unlike everything else I discuss in this article, a good attitude can&#39;t be taught. Here
+are some of the attitudes of an excellent developer:</p>
+<ul>
+<li><strong>Willingness to learn</strong>: one of my favourite things is working with a junior-mid developer who eagerly soaks up
+information. Conversely, even a very capable senior developer can be difficult to work with if they refuse to learn
+new skills or be challenged. An excellent junior developer eagerly learns from senior developers; an excellent
+senior developer or tech lead continues to learn throughout their career.</li>
+<li><strong>Willingness to challenge others</strong>: conversely, speaking up with your ideas and perspectives is important even for
+a junior developer, and helps both team growth and personal growth.</li>
+<li><strong>Humility</strong>: this one is hopefully fairly obvious, but giving credit where it&#39;s due, gracefully compromising while
+collaborating, and allowing your good work to speak for itself are all qualities of a good developer.</li>
+<li><strong>Inclusion</strong>: a good senior developer helps others gain confidence to speak up regardless of level of experience, or
+any other factor, and fosters a constructive learning environment for everyone in the team.</li>
+<li><strong>Teamwork</strong>: the burden of responsibility for goals, deliverables, and solving any problems are on the team, not
+individuals. A good team player helps unblock other members of the team and shares their own knowledge and skillset
+with others.</li>
+</ul>
+<hr>
+<h1 id="best-practices">Best practices</h1>
+<p>Entire books have been written on the subject of best practices, and any specific languages and tooling will layer on
+even further practices. I&#39;ve simply picked a handful of the most universal concepts to focus on, as they are are vital
+to any developer.</p>
+<h2 id="dont-repeat-yourself">Don&#39;t Repeat Yourself</h2>
+<p>DRY is more or less the golden rule of writing code and something any developer should keep in mind as they plan and
+write their code. DRY code shares common components into reusable, testable units. This avoids reinventing wheels,
+prevents mistakes when updating shared functionality, and avoids overlapping unit tests for the same functionality.
+Done correctly, your code is better organised and more readable.</p>
+<p>Every instance of repeated code has the possibility of becoming out of date when one copy is changed, so whenever
+code is being added to it&#39;s worth considering how to make it more DRY – though as always, it&#39;s possible to take it too
+far and make a mess, so discretion is important.</p>
+<h2 id="separation-of-concerns">Separation of concerns</h2>
+<p>Keeping concerns separate is another key consideration: this ties into how you structure your codebase, as well as how
+you keep your code readable and DRY.</p>
+<p>Separation of concerns is largely about keeping high-level logic away from low-level logic and making sure abstraction
+happens at the right levels. For example, encapsulating low-level driver logic into its own package which presents a
+higher-level API, and ensuring higher level functionality only has to use that API.</p>
+<p>Here&#39;s a very contrived example in python to illustrate the basic principle; note that the different layers of file IO,
+&quot;transforming&quot; data, and putting it all together are independent modules and functions. They represent different
+&quot;levels&quot; of operation and are also organised according to function.</p>
+<pre><code class="language-python">## io.py
+def write_data(data):
+    with open(&#39;/tmp/output.txt&#39;, &#39;w&#39;) as f:
+        f.write(data)
+
+def read_data():
+    with open(&#39;/tmp/input.txt&#39;, &#39;r&#39;) as f:
+        return f.read()
+
+
+## transform.py
+def embiggen(raw_data):
+    n = int(raw_data)
+    return str(n * 10000)
+
+## main.py
+def main():
+    data = io.read_data()
+    bigger = transform.embiggen(data)
+    io.write_data(bigger)
+</code></pre>
+<h2 id="organisation-and-readability">Organisation and readability</h2>
+<p>This is one of the hardest and most subjective parts of writing code, and likely where everyone will have their own
+interpretation of what good practice looks like. Certainly there are <a href="https://www.goodreads.com/book/show/3735293-clean-code">entire books</a> you could read on
+individual concepts here, so for the sake of simplicity I&#39;ll give a brief word about some of the fundamental signs of
+well-organised, readable code:</p>
+<ul>
+<li><strong>Structure</strong>: should be consistent, well thought out, and logical. Package names should be concise and clear,
+and structured into subpackages where sensible to do so. The same applies to modules, classes, functions, and other
+structural levels your language provides.</li>
+<li><strong>Naming</strong> of packages, classes, functions, variables, etc. should be as concise as possible while being clear in
+context. Follow DRY rules as with everything else, and avoid repeating the name of your package in your class or
+the name of your class in your method, but do make names clear and unambiguous. Consider whether your component
+is a logical unit or if it needs refactoring if you struggle to name it or find yourself using the word &quot;and&quot;.</li>
+<li><strong>Conciseness and simplicity</strong>: well-written code is as simple and concise as possible. Watching out for
+redundant logic, premature or overly complicated abstraction, excessively wordy names or comments, and any
+repeated code greatly helps. Simple code is easy to understand, easy to modify, and easy to test. One of the key
+skills distinguishing a senior developer is turning a complicated problem into a series of much simpler problems.</li>
+<li><strong>Formatting</strong> is important for readability and should be consistent and easy for people to understand. Good
+formatting is highly subjective and should be discussed with your team to make sure it&#39;s readable for everyone.
+Each language tends to have official style guides and automated tools to help you here, but ultimately your team
+decides what works best for them.</li>
+<li><strong>Documentation</strong> takes many forms and is vital to ensure the rest of the team (and you, 6 months later) can
+understand the intent, the APIs, and the business purpose behind various components. Good documentation involves
+code documentation wherever something is not immediately clear; technical documentation illustrating project
+structure, design decisions, build processes, and anything else needed to understanding a project&#39;s purpose;
+adequate documentation of changes via version control (commit messages) and associated feature tickets (such as
+Jira); and business documentation describing what the component does from a business standpoint. Documentation
+should focus on useful information, though – don&#39;t state the obvious or simply write boilerplate for the sake of
+writing something.</li>
+</ul>
+<h2 id="testability">Testability</h2>
+<p>Well written code is easy to test. All of the principles above directly contribute to making unit testing code easier.
+If you adopt a Test-Driven Development (TDD) approach, you&#39;ll be thinking about testing throughout the process of
+deciding your project structure and writing the code; with a strict TDD approach you&#39;ll write your unit tests before
+anything else. Whatever your approach, you&#39;ll ultimately be ensuring unit tests cover as much of your codebase as
+possible, and are fast, independent, and consistent.</p>
+<p>You&#39;ll also need to consider other forms of testing, such as integration and end to end testing, and likely
+collaborating with QA engineers to ensure test coverage. Each progressive stage of testing (unit, integration, end to
+end testing) tends to involve fewer, slower tests covering progressively higher levels of logic. Having a set of fast
+and comprehensive unit tests gives you confidence that changes have not impacted existing logic, and having a set of
+end-to-end business logic tests gives you confidence that your project still does what it&#39;s meant to. A good developer
+pays attention to test coverage and quality and aims for a build process which is fast and effective.</p>
+<h2 id="applying-best-practice">Applying best practice</h2>
+<p>This is another area which is very subjective and is a test of experience: applying best practices in a pragmatic way.
+A common mistake is to consider buzzwords and &quot;the letter of the law&quot; when making decisions on team processes, coding
+standards, and other aspects of development. The reality is, applying a rigid definition of any practice is a recipe
+for disaster. It&#39;s important to understand the strengths of an approach like TDD or Agile and ensure your process and
+practices are designed to make use of those strengths, and avoid simply using them as buzzwords. The correct way to
+apply all of these practices will vary greatly from team to team and project to project. This also means trusting the
+experience of developers is vital – avoid &quot;my IDE suggests doing this&quot; or &quot;the linter&#39;s default config is like this&quot; or
+&quot;Google does it like this&quot; or &quot;a blog says do it like this&quot;. Developers have more relevant insight into development
+practices on your team than the creators of your tooling do, and discussing best practices pays dividends in avoiding
+future techdebt.</p>
+<p>A good senior developer avoids unnecessary buzzwords and can help a team understand the tangible gains from applying
+best practices, and decide whether the aims are being achieved. An example of this is TDD: the core principle is to
+think about testing first in order to guide structure of your application and ensure it can be adequately tested. This
+is a sound design principle in general. However, the strictest interpretation of TDD involves writing all your tests
+before writing any actual code. This works fine if you&#39;re adding a small feature to an existing component or trying to
+fix a bug, but when working on a greenfield application, this often means attempting to write a whole test suite before
+getting to grips with what a sensible API or structure will look like, and before encountering any of the challenges
+which naturally pop up during the development process. That means applying strict TDD for the sake of it is often a
+mistake, though it may be a helpful process for junior developers who don&#39;t yet have the experience to make a judgement
+call on when to bend the rules.</p>
+<p>It&#39;s also worth considering that most buzzwords don&#39;t have a single universally accepted definition, and between
+teams, or even within teams, individuals may have varying understanding of what terms mean. That&#39;s naturally guided by
+past experience applying these principles and the fact that every team is different. While terms are useful to aid in
+understanding, my biggest piece of advice here is simply <strong>don&#39;t get bogged down with buzzwords</strong>.</p>
+<p>Unfortunately for the same reason that strict definitions don&#39;t work, it&#39;s impossible to give one-size-fits-all advice
+on how to apply best practices here. An understanding of what combinations work and don&#39;t work will come from gaining
+experience in different teams and is a key facet of being an effective senior developer or technical lead. What
+specifically works for your team will likely be unique.</p>
+<hr>
+<h1 id="working-with-business">Working with business</h1>
+<p>Soft skills like communication and project management skills are often overlooked, and often developers would rather
+avoid them entirely and just focus on writing code. However these skills are important to developers at all levels and
+become increasingly important with seniority as a developer. Frequently most direct contact with the business side will
+be handled by the tech lead or the most senior developers. This ensures the whole team stays in the loop, the correct
+technical decisions are made, and indeed that developers have minimal distraction from writing code. Every developer
+should be able to effectively communicate with non-technical people, though, and it&#39;s especially important that all
+developers understand the business value in what they&#39;re building. Here are some key soft skills for developers,
+especially senior developers:</p>
+<ul>
+<li><p>Translating technical project design and progress to non-technical people, such as Business Analysts and Product
+Owners, in a way that gives them a good understanding of the big picture. Conversely, working with business to
+design a product and converting that into a technical plan or architecture.</p>
+</li>
+<li><p>Communicating complexity / effort estimates clearly, and setting realistic expectations. This is especially
+important when priorities change and work must be delayed to fit new requirements.</p>
+</li>
+<li><p>Helping BAs and POs prioritise work according to business need and complexity, and ensuring any trade-offs are
+well understood.</p>
+</li>
+<li><p>Ensuring technical debt requirements are understood and prioritised properly, and ensuring non-technical people
+understand the impact of creating or failing to deal with technical debt.</p>
+</li>
+<li><p>Working with BAs and POs to make sure tickets are ready to pick up by the time they reach a sprint or kanban board
+by organising refinement and planning. What this looks like may vary greatly depending on the team and process and
+requires collaboration to pick the right solution.</p>
+</li>
+</ul>
+<hr>
+<h1 id="summary">Summary</h1>
+<p>I&#39;ve rattled off a lot of high-level ideas in this article, and undoubtedly missed some as well. The bottom
+line is a good developer requires a wide variety of skills, both &quot;soft&quot; and technical, to do the job well. A good
+developer and also needs to have the right attitude from the outset. What I&#39;ve discussed here is a very high level view
+of what I look for when hiring and training developers, and what I feel every developer should learn and improve on in
+order to grow and succeed.</p>
+<p>I also discuss some of these areas in more detail in <a href=".">other articles</a>, and especially focus on some best
+practices in Scala specifically.</p>
+
+  </section>
+
+
+    
+      <section id="page-footer">
+        <div id="footer-contact">
+          <p>Want to find out more? Get in touch:</p>
+          <p><a href="mailto:sales@scalable-solutions.co.uk">sales@scalable-solutions.co.uk</a></p>
+        </div>
+        <div id="copyright-notice">
+          <p>"Scalable Solutions" is a trade name of Xantoria Games Ltd.</p>
+          <p>© 2022 Xantoria Games Ltd. All rights reserved.</p>
+        </div>
+      </section>
+    
+  </body>
+</html>
