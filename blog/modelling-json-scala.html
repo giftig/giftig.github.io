@@ -344,7 +344,7 @@ of further structure, and which would cause serious pain with case classes</li>
 names, e.g. <code>jsonFormat(&quot;MSGDat11&quot;, &quot;MsgTim12&quot;, ..., MyModel.apply)</code> but reshaping the JSON data into a
 sensible structure to parse into your model can be hard work for some of these issues, and I&#39;ll leave the
 details of that as an exercise for the reader, and to be revisited in future.</p>
-<p>Regardless, amistake I&#39;ve seen a few times is fearing having to write logic into the serialisation layer,
+<p>Regardless, a mistake I&#39;ve seen a few times is fearing having to write logic into the serialisation layer,
 such as we&#39;ve seen in some examples above, and preferring to write models directly equivalent to the JSON.
 Largely the reasoning here is not wanting to get to grips with how to write custom serialisers, and the
 argument I&#39;ve heard for this approach is that minimal serialisation logic makes it easy to see what&#39;s being
