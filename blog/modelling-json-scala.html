@@ -98,7 +98,7 @@ libraries to use. Fortunately, the guiding principles of almost all of these lib
 <ul>
 <li>We convert from <code>String</code> to and from a JSON AST (Abstract Syntax Tree) provided by the library, and from
 that AST to/from your case class models</li>
-<li>We use [type classes][blog-implicit-classes] to add JSON serialisation functionality for the types
+<li>We use <a href="scala-implicits-uses-pitfalls.html#implicit-classes">type classes</a> to add JSON serialisation functionality for the types
 present in our models, which we make implicitly available</li>
 <li>The library provides implicit type classes for basic types like <code>Int</code>, <code>Double</code>, <code>String</code>, <code>List[T]</code>,
 <code>Map[String, T]</code> out of the box</li>
@@ -175,7 +175,7 @@ elsewhere regardless.</p>
 <p>Depending on what&#39;s being modelled, you may also choose to use stronger types for some fields. For
 example, an ID field representing a particular type of ID might be best represented by its own type,
 especially if there are specific formatting concerns. That could be as simple as a wrapper class like
-<code>case class Isbn(value: String)</code>, which primarily acts to fistinguish the type in your code when ISBNs are
+<code>case class Isbn(value: String)</code>, which primarily acts to distinguish the type in your code when ISBNs are
 used as keys frequently. But it may be more complex depending on encoding: an ISBN is actually comprised of
 multiple different subgroups, including a checksum digit, and you might want to capture that information.</p>
 <p>In other cases, you may have a set of valid possible values appearing in a field, such as in a &quot;status&quot; field
